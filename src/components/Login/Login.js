@@ -1,42 +1,68 @@
 import React, { useState } from 'react';
 import { Lock, User, Eye, EyeOff } from 'lucide-react';
+import ForgotPassword from '../ForgotPassword/ForgotPassword';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  const [users, setUsers] = useState([
+    { username: 'admin', password: 'admin@123', email: 'admin@example.com' }
+  ]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'admin@123') {
+    const user = users.find(u => u.username === username && u.password === password);
+    if (user) {
       onLogin(username);
     } else {
       alert('Invalid credentials! Use: admin / admin@123');
     }
   };
 
+  const handlePasswordReset = (email, newPassword) => {
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex !== -1) {
+      const updatedUsers = [...users];
+      updatedUsers[userIndex].password = newPassword;
+      setUsers(updatedUsers);
+      alert('Password reset successfully! Please login with your new password.');
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <ForgotPassword 
+        onBack={() => setShowForgotPassword(false)}
+        onPasswordReset={handlePasswordReset}
+      />
+    );
+  }
+
   return (
     <div className="login-wrapper">
       <div className="login-card">
         <div className="text-center mb-4">
-          <div className="bg-primary text-white d-inline-flex p-3 rounded-circle mb-3">
+          <div className="login-icon-circle">
             <Lock size={32} />
           </div>
-          <h2 className="fw-bold mb-1">Welcome</h2>
-          <p className="text-muted small">Reels Stock Management System</p>
+          <h2 className="login-title">Welcome</h2>
+          <p className="login-subtitle">Reels Stock Management System</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label fw-semibold small">Username</label>
-            <div className="input-group">
-              <span className="input-group-text bg-light">
+          <div className="login-form-group">
+            <label className="login-label">Username</label>
+            <div className="login-input-group">
+              <span className="login-input-icon">
                 <User size={18} />
               </span>
               <input 
                 type="text" 
-                className="form-control bg-light" 
+                className="login-input" 
                 placeholder="Enter username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -45,15 +71,15 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
-          <div className="mb-2">
-            <label className="form-label fw-semibold small">Password</label>
-            <div className="input-group">
-              <span className="input-group-text bg-light">
+          <div className="login-form-group">
+            <label className="login-label">Password</label>
+            <div className="login-input-group">
+              <span className="login-input-icon">
                 <Lock size={18} />
               </span>
               <input 
                 type={showPassword ? "text" : "password"} 
-                className="form-control bg-light" 
+                className="login-input" 
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -61,7 +87,7 @@ const Login = ({ onLogin }) => {
               />
               <button 
                 type="button"
-                className="btn btn-light border"
+                className="login-password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -69,12 +95,16 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
-          {/* Hint directly visible */}
-          <div className="mb-3 small text-muted">
-            <span className="text-warning">💡 Hint:</span> Password is <strong>admin@123</strong>
+          <div className="login-forgot-link">
+            <button 
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+            >
+              Forgot Password?
+            </button>
           </div>
 
-          <button type="submit" className="btn btn-primary w-100 py-2 fw-semibold">
+          <button type="submit" className="login-submit-btn">
             Sign In
           </button>
         </form>

@@ -1,50 +1,23 @@
-import React, { useState } from 'react';
 import Header from '../Header/Header';
-import Sidebar from '../Sidebar/Sidebar';
 import './Layout.css';
 
-const Layout = ({ activeTab, setActiveTab, onLogout, userName, children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const handleToggle = () => {
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(!isSidebarOpen);
-    } else {
-      setIsCollapsed(!isCollapsed);
-    }
-  };
-
-  const closeSidebar = () => setIsSidebarOpen(false);
-
+const Layout = ({ activeTab, setActiveTab, onLogout, onOpenProfile, userName, children }) => {
   return (
-    <div className={`app-container ${isSidebarOpen ? 'sidebar-open' : ''} ${isCollapsed ? 'app-collapsed' : ''}`}>
-      {/* Backdrop overlay for mobile sidebar */}
-      {isSidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar}></div>}
-
+    <div className="app-container">
       <Header 
-        userName={userName} 
-        isSidebarOpen={isSidebarOpen} 
-        onToggle={handleToggle} 
+        userName={userName}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={onLogout}
+        onOpenProfile={onOpenProfile}
       />
 
-      <div className="layout-body">
-        <Sidebar 
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onLogout={onLogout}
-          isSidebarOpen={isSidebarOpen}
-          isCollapsed={isCollapsed}
-          closeSidebar={closeSidebar}
-        />
-
-        {/* Main Content Area */}
-        <main className={`main-content ${isCollapsed ? 'collapsed' : ''}`}>
-          <div className="page-wrapper">
-            {children}
-          </div>
-        </main>
-      </div>
+      {/* Main Content Area */}
+      <main className="main-content">
+        <div className="page-wrapper">
+          {children}
+        </div>
+      </main>
     </div>
   );
 };

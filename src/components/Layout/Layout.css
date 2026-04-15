@@ -1,9 +1,8 @@
-/* Layout.css - Core Layout Structure */
+/* Core Layout Structure */
 
 :root {
   --header-height: 70px;
-  --sidebar-width: 260px;
-  --accent-primary: #1a73e8; /* Google Blue - Premium Feel */
+  --accent-primary: #1a73e8;
   --accent-glow: rgba(26, 115, 232, 0.08);
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(255, 255, 255, 0.5);
@@ -14,56 +13,21 @@
   background-color: #f8fafc;
 }
 
-/* --- Backdrop overlay for mobile sidebar --- */
-.sidebar-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.3);
-  backdrop-filter: blur(4px);
-  z-index: 1050;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* --- Layout Body --- */
-.layout-body {
+/* --- Main Content Area --- */
+.main-content {
+  min-height: calc(100vh - var(--header-height));
   padding-top: var(--header-height);
 }
 
-/* --- Main Content Area --- */
-.main-content {
-  margin-left: var(--sidebar-width);
-  min-height: calc(100vh - var(--header-height));
-  transition: all 0.3s ease;
-}
-
-.main-content.collapsed {
-  margin-left: 80px;
-}
-
 .page-wrapper {
-  padding: 2rem 2.5rem;
+  padding: 0.5rem 2.5rem;
   max-width: 1600px;
   margin: 0 auto;
 }
 
 /* Responsive Handling */
 @media (max-width: 767.98px) {
-  .main-content {
-    margin-left: 0 !important;
+  .page-wrapper {
     padding: 1.5rem;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1024px) {
-  .main-content {
-    margin-left: 80px;
   }
 }
