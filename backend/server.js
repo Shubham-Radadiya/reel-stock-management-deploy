@@ -333,10 +333,12 @@ const start = async () => {
     );
   }
   await seedInitialData();
-  const host = process.env.HOST || '0.0.0.0';
-  app.listen(PORT, host, () => {
-    const url = `http://${host === '0.0.0.0' ? 'localhost' : host}:${PORT}`;
-    console.log(`Server listening on ${url}`);
+  // Render/Fly/Railway health checks hit the container from outside — must bind all interfaces.
+  // Do not use HOST=127.0.0.1 on PaaS (it breaks port detection). Optional LISTEN_HOST for advanced setups.
+  const listenHost = process.env.LISTEN_HOST || '0.0.0.0';
+  app.listen(PORT, listenHost, () => {
+    const url = `http://localhost:${PORT}`;
+    console.log(`Server listening on ${listenHost}:${PORT} (open ${url} locally when testing)`);
     if (fs.existsSync(BUILD_INDEX)) {
       console.log('Serving React app from / (production build)');
     } else {
