@@ -131,6 +131,21 @@ userSchema.set('toJSON', {
 const User = mongoose.model('User', userSchema);
 const Reel = mongoose.model('Reel', reelSchema);
 
+/** Mongoose Connection#readyState — helps interpret /api/health without looking up numbers. */
+const mongoPhase = () =>
+  ({
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  }[mongoose.connection.readyState] || 'unknown');
+
+const MONGOOSE_CONNECT_OPTS = {
+  serverSelectionTimeoutMS: 12_000,
+  connectTimeoutMS: 12_000,
+  maxPoolSize: 10
+};
+
 const createToken = (user) =>
   jwt.sign(
     {
@@ -226,12 +241,15 @@ const seedInitialData = async () => {
 };
 
 app.get('/api/health', (req, res) => {
-  const dbOk = mongoose.connection.readyState === 1;
+  const rs = mongoose.connection.readyState;
+  const phase = mongoPhase();
+  const dbOk = rs === 1;
   res.json({
     ok: true,
     message: 'API is running',
-    database: dbOk ? 'connected' : 'disconnected',
-    mongoReadyState: mongoose.connection.readyState,
+    database: dbOk ? 'connected' : phase,
+    mongoReadyState: rs,
+    mongoPhase: phase,
     configuration: {
       hasMongoUri: Boolean(MONGO_URI),
       productionJwtReady: isProductionJwtReady(),
@@ -473,7 +491,7 @@ const start = async () => {
   void (async () => {
     for (;;) {
       try {
-        await mongoose.connect(MONGO_URI);
+        await mongoose.connect(MONGO_URI, MONGOOSE_CONNECT_OPTS);
         try {
           await seedInitialData();
           console.log('MongoDB connected and seed step finished.');
@@ -482,6 +500,7 @@ const start = async () => {
         }
         return;
       } catch (err) {
+        await mongoose.disconnect().catch(() => {});
         console.error(
           'MongoDB connection failed, retrying in 5s:',
           err.message,
