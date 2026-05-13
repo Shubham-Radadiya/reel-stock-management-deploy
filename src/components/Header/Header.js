@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Package, User, LayoutDashboard, FileBarChart, LogOut } from 'lucide-react';
+import { Package, User, LayoutDashboard, FileBarChart, LogOut, Users } from 'lucide-react';
 import ProfileModal from './ProfileModal/ProfileModal';
 import './Header.css';
 
-const Header = ({ userName, userEmail, activeTab, setActiveTab, onLogout, onUpdateProfile, onChangePassword }) => {
+const Header = ({ userName, userEmail, activeTab, setActiveTab, onLogout, onUpdateProfile, onChangePassword, userRole }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleProfileClick = () => {
@@ -53,6 +53,16 @@ const Header = ({ userName, userEmail, activeTab, setActiveTab, onLogout, onUpda
                 <FileBarChart size={18} />
                 <span>Reports</span>
               </button>
+              {userRole === 'admin' && (
+                <button
+                  type="button"
+                  className={`nav-tab ${activeTab === 'users' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('users')}
+                >
+                  <Users size={18} />
+                  <span>Users</span>
+                </button>
+              )}
             </nav>
           </div>
 

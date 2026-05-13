@@ -652,5 +652,6 @@ export const initialReels = [
 ];
 
 export const SHADES = ['N', 'G'];
-export const BF_VALUES = ['16', '18', '20', '22', '24', '28', '35'];
-export const GSM_VALUES = ['100', '120', '150', '170', '180'];
+export const BF_VALUES = ['16'];
+export const GSM_VALUES = ['100', '115', '120', '130', '140', '180'];
+export const SIZE_VALUES = Array.from({ length: 43 }, (_, i) => String(20 + i));

@@ -1,7 +1,7 @@
 import Header from '../Header/Header';
 import './Layout.css';
 
-const Layout = ({ activeTab, setActiveTab, onLogout, onOpenProfile, userName, children }) => {
+const Layout = ({ activeTab, setActiveTab, onLogout, onOpenProfile, userName, userRole, children }) => {
   return (
     <div className="app-container">
       <Header 
@@ -10,6 +10,7 @@ const Layout = ({ activeTab, setActiveTab, onLogout, onOpenProfile, userName, ch
         setActiveTab={setActiveTab}
         onLogout={onLogout}
         onOpenProfile={onOpenProfile}
+        userRole={userRole}
       />
 
       {/* Main Content Area */}

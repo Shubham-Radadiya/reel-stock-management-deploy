@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lock, User, Eye, EyeOff } from 'lucide-react';
 import ForgotPassword from '../ForgotPassword/ForgotPassword';
 import './Login.css';
+import { showError } from '../../utils/toastUtils';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -9,27 +10,12 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  const [users, setUsers] = useState([
-    { username: 'admin', password: 'admin@123', email: 'admin@example.com' }
-  ]);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const user = users.find(u => u.username === username && u.password === password);
-    if (user) {
-      onLogin(username);
-    } else {
-      alert('Invalid credentials! Use: admin / admin@123');
-    }
-  };
-
-  const handlePasswordReset = (email, newPassword) => {
-    const userIndex = users.findIndex(u => u.email === email);
-    if (userIndex !== -1) {
-      const updatedUsers = [...users];
-      updatedUsers[userIndex].password = newPassword;
-      setUsers(updatedUsers);
-      alert('Password reset successfully! Please login with your new password.');
+    try {
+      await onLogin(username, password);
+    } catch (error) {
+      showError(error.message || 'Invalid credentials');
     }
   };
 
@@ -37,7 +23,9 @@ const Login = ({ onLogin }) => {
     return (
       <ForgotPassword 
         onBack={() => setShowForgotPassword(false)}
-        onPasswordReset={handlePasswordReset}
+        onPasswordReset={() => {
+          showError('Password reset is not connected to backend yet.');
+        }}
       />
     );
   }
