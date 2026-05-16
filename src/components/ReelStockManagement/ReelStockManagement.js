@@ -1,11 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Package, Clock, Edit2, Trash2, X, Check, ListFilter } from 'lucide-react';
+import { Plus, Package, Clock, Edit2, Trash2, X, Check, ListFilter, FileSpreadsheet, Scale, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import './ReelStockManagement.css';
 import { displayDate } from '../../utils/dateFormat';
 import ConfirmationModal from '../ConfirmationModal/ConfirmationModal';
+import ExcelImportModal from '../ExcelImportModal/ExcelImportModal';
 import SpreadsheetFilterMenu from '../SpreadsheetFilterMenu/SpreadsheetFilterMenu';
-import { showError, showSuccess } from '../../utils/toastUtils';
+import { showError, showSuccess, showWarning } from '../../utils/toastUtils';
+import { getLowStockItems } from '../../utils/stockMinimumUtils';
+import {
+  dismissMinStockRuleIds,
+  getDismissedMinStockIds,
+  markMinStockToastShown,
+  syncDismissedWithLowRules,
+  wasMinStockToastShown
+} from '../../utils/minStockNotificationStorage';
 
 const FILTER_COLUMN_KEYS = ['date', 'srNo', 'reelNo', 'shade', 'bf', 'gsm', 'size', 'weight', 'status', 'outDetails'];
 
@@ -18,6 +27,17 @@ const sortOutDetailsFilterValues = (values) =>
     if (bv === 'AVAILABLE' && av !== 'AVAILABLE') return 1;
     return av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
   });
+
+const parseWeightKg = (value) => {
+  const n = parseFloat(String(value ?? '').replace(/,/g, '').trim());
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+};
+
+const formatWeightKg = (kg) =>
+  new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(kg);
+
+const formatWeightTon = (kg) =>
+  new Intl.NumberFormat('en-IN', { maximumFractionDigits: 3 }).format(kg / 1000);
 
 const getCellValue = (reel, colKey) => {
   switch (colKey) {
@@ -46,7 +66,18 @@ const getCellValue = (reel, colKey) => {
   }
 };
 
-const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onToggleReel, isLoading }) => {
+const ReelStockManagement = ({
+  reels,
+  stockMinimums = [],
+  userRole,
+  userName,
+  onAddReel,
+  onBulkAddReels,
+  onUpdateReel,
+  onDeleteReel,
+  onToggleReel,
+  isLoading
+}) => {
   const [editingReelId, setEditingReelId] = useState(null);
   const [editFormData, setEditFormData] = useState(null);
   const [isAddingInline, setIsAddingInline] = useState(false);
@@ -66,6 +97,9 @@ const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onT
   const [filterMenu, setFilterMenu] = useState(null);
   /** Table-only slice: all | in stock | out stock (stats use column-filter scope only). */
   const [stockListFilter, setStockListFilter] = useState('all');
+  const [showExcelImport, setShowExcelImport] = useState(false);
+  const [isExcelImporting, setIsExcelImporting] = useState(false);
+  const [minStockDismissTick, setMinStockDismissTick] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({
     title: '',
@@ -128,6 +162,30 @@ const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onT
       } catch (error) {
         showError(error.message || 'Failed to check out reel.');
       }
+    }
+  };
+
+  const handleExcelImport = async (rows) => {
+    if (!onBulkAddReels || !rows.length) return;
+    setIsExcelImporting(true);
+    try {
+      const result = await onBulkAddReels(rows);
+      const imported = result.imported ?? result.created?.length ?? 0;
+      const failed = result.failed ?? result.errors?.length ?? 0;
+      if (imported > 0) {
+        showSuccess(
+          failed > 0
+            ? `Imported ${imported} reel(s). ${failed} row(s) failed.`
+            : `Imported ${imported} reel(s) from Excel.`
+        );
+        setShowExcelImport(false);
+      } else {
+        showError('No reels were imported. Check SR No and Reel No on each row.');
+      }
+    } catch (error) {
+      showError(error.message || 'Excel import failed.');
+    } finally {
+      setIsExcelImporting(false);
     }
   };
 
@@ -322,11 +380,54 @@ const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onT
   // Statistics for the three boxes (same scope as column filters, not sliced by stock tab)
   const stats = useMemo(() => {
     const totalReels = scopeFilteredReels.length;
-    const reelsIn = scopeFilteredReels.filter(r => !r.isCheckedOut).length;
-    const reelsOut = scopeFilteredReels.filter(r => r.isCheckedOut).length;
-    
-    return { totalReels, reelsIn, reelsOut };
+    const inStock = scopeFilteredReels.filter((r) => !r.isCheckedOut);
+    const reelsIn = inStock.length;
+    const reelsOut = scopeFilteredReels.filter((r) => r.isCheckedOut).length;
+    const totalWeightKg = inStock.reduce((sum, r) => sum + parseWeightKg(r.weight), 0);
+
+    return { totalReels, reelsIn, reelsOut, totalWeightKg };
   }, [scopeFilteredReels]);
+
+  const lowStockAlerts = useMemo(
+    () => getLowStockItems(reels, stockMinimums),
+    [reels, stockMinimums]
+  );
+
+  const isAdmin = userRole === 'admin';
+
+  const undismissedLowAlerts = useMemo(() => {
+    if (!isAdmin) return [];
+    const dismissed = getDismissedMinStockIds(userName);
+    return lowStockAlerts.filter((item) => !dismissed.has(item.id));
+  }, [isAdmin, lowStockAlerts, userName, minStockDismissTick]);
+
+  useEffect(() => {
+    if (!isAdmin || !userName) return;
+    const lowIds = lowStockAlerts.map((item) => item.id);
+    syncDismissedWithLowRules(userName, lowIds);
+  }, [isAdmin, userName, lowStockAlerts]);
+
+  useEffect(() => {
+    if (!isAdmin || undismissedLowAlerts.length === 0) return;
+    const signature = undismissedLowAlerts
+      .map((item) => item.id)
+      .sort()
+      .join(',');
+    if (wasMinStockToastShown(userName, signature)) return;
+    showWarning(
+      `${undismissedLowAlerts.length} Size + GSM combo(s) are below minimum stock. Check Reports → Minimum stock.`
+    );
+    markMinStockToastShown(userName, signature);
+  }, [isAdmin, userName, undismissedLowAlerts]);
+
+  const handleDismissMinStockAlert = () => {
+    dismissMinStockRuleIds(
+      userName,
+      undismissedLowAlerts.map((item) => item.id)
+    );
+    setMinStockDismissTick((n) => n + 1);
+    showSuccess('Minimum stock alert dismissed. View the full list under Reports → Minimum stock.');
+  };
 
   useEffect(() => {
     if (!isAddingInline) {
@@ -356,6 +457,40 @@ const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onT
 
   return (
     <div className="stock-management-container">
+      {isAdmin && undismissedLowAlerts.length > 0 && (
+        <div className="stock-minimum-alert mb-2" role="alert">
+          <div className="stock-minimum-alert-head">
+            <div className="stock-minimum-alert-head-left">
+              <AlertTriangle size={20} aria-hidden />
+              <strong>Below minimum stock</strong>
+              <span className="stock-minimum-alert-count">
+                {undismissedLowAlerts.length} Size + GSM{' '}
+                {undismissedLowAlerts.length === 1 ? 'combo' : 'combos'}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm btn-light stock-minimum-alert-dismiss"
+              onClick={handleDismissMinStockAlert}
+            >
+              Dismiss
+            </button>
+          </div>
+          <ul className="stock-minimum-alert-list">
+            {undismissedLowAlerts.map((item) => (
+              <li key={item.id}>
+                Size <strong>{item.size}</strong> · GSM <strong>{item.gsm}</strong> —{' '}
+                <span className="text-danger fw-semibold">{item.current}</span> in stock, minimum{' '}
+                <strong>{item.minReels}</strong>
+                {item.shortfall > 0 ? (
+                  <span className="ms-1">(short by {item.shortfall})</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Stats Cards & Actions Bar - All in One Row */}
       <div className="header-stats-row mb-2">
         {/* Stats Cards */}
@@ -407,6 +542,24 @@ const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onT
               <span className="stat-value-inline">{stats.reelsOut}</span>
             </div>
           </button>
+
+          <div
+            className="stat-card-inline stat-card-weight"
+            title="Sum of weight for in-stock reels (not checked out)"
+          >
+            <div className="stat-card-icon-inline">
+              <Scale size={20} />
+            </div>
+            <div className="stat-card-content-inline">
+              <span className="stat-label-inline">Available Weight</span>
+              <span className="stat-value-inline stat-value-weight">
+                {formatWeightKg(stats.totalWeightKg)} <span className="stat-weight-unit">KG</span>
+              </span>
+              <span className="stat-value-weight-ton">
+                {formatWeightTon(stats.totalWeightKg)} <span className="stat-weight-unit">Ton</span>
+              </span>
+            </div>
+          </div>
         </div>
         
         <div className="action-section">
@@ -417,7 +570,16 @@ const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onT
           >
             <Plus size={18} /> {isAddingInline ? 'Adding Row...' : 'Add New Reel'}
           </button>
-          <div className="form-check mt-2">
+          <button
+            type="button"
+            className="btn btn-outline-success d-flex align-items-center gap-2 px-3 shadow-sm"
+            onClick={() => setShowExcelImport(true)}
+            disabled={isAddingInline || isExcelImporting}
+          >
+            <FileSpreadsheet size={18} />
+            Import Excel
+          </button>
+          <div className="form-check">
             <input
               className="form-check-input"
               type="checkbox"
@@ -940,6 +1102,13 @@ const ReelStockManagement = ({ reels, onAddReel, onUpdateReel, onDeleteReel, onT
           if (filterMenu) setSortConfig({ key: filterMenu.column, dir: 'desc' });
           setFilterMenu(null);
         }}
+      />
+
+      <ExcelImportModal
+        isOpen={showExcelImport}
+        onClose={() => setShowExcelImport(false)}
+        onImport={handleExcelImport}
+        isImporting={isExcelImporting}
       />
 
       {/* Confirmation Modal */}

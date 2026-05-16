@@ -1,0 +1,30 @@
+.users-create-form .form-control,
+.users-create-form .form-select {
+  font-size: 0.875rem;
+}
+
+.users-create-note {
+  margin-top: -0.5rem;
+}
+
+.users-password-cell {
+  font-size: 0.8rem;
+  background: #f1f5f9;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.users-show-pwd {
+  font-size: 0.75rem;
+  vertical-align: baseline;
+}
+
+.users-access-summary {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.users-access-btn {
+  display: inline-flex;
+  align-items: center;
+}

@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
-import { 
-  User, Lock, X, Mail, Phone, Save, MapPin, Home, 
-  AtSign, Users, Building 
+import {
+  User,
+  Lock,
+  X,
+  Mail,
+  Phone,
+  Save,
+  MapPin,
+  AtSign,
+  Users,
+  Building,
+  Clock
 } from 'lucide-react';
 import { showSuccess, showError } from '../../../utils/toastUtils';
 import './ProfileModal.css';
 
-const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePassword }) => {
+function ProfileModal({ isOpen, onClose, userData, onUpdateProfile, onChangePassword }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
     username: userData?.username || '',
@@ -14,10 +23,9 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
     lastName: userData?.lastName || '',
     email: userData?.email || '',
     phone: userData?.phone || '',
-    companyName: userData?.companyName || '',
-    address: userData?.address || '',
-    city: userData?.city || '',
-    state: userData?.state || ''
+    location: userData?.location || userData?.city || '',
+    hours: userData?.hours || '',
+    companyName: userData?.companyName || ''
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -70,7 +78,7 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        await onUpdateProfile(formData);
+        if (onUpdateProfile) await onUpdateProfile(formData);
         showSuccess('Profile updated successfully! 🎉');
         setTimeout(() => onClose(), 1500);
       } catch (error) {
@@ -92,7 +100,7 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        await onChangePassword(passwordData);
+        if (onChangePassword) await onChangePassword(passwordData);
         showSuccess('Password changed successfully! 🔒');
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         setTimeout(() => {
@@ -115,8 +123,26 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
       <div className="profile-modal-overlay" onClick={onClose} />
       <div className="profile-modal-container">
         <div className="profile-modal-header">
-          <h3 className="profile-modal-title">Account Settings</h3>
-          <button className="profile-modal-close-btn" onClick={onClose}>
+          <div className="profile-modal-header-main">
+            <div className="profile-modal-header-left">
+              <h3 className="profile-modal-title">Account Settings</h3>
+              <p className="profile-modal-display-name">
+                {formData.firstName || formData.lastName
+                  ? `${formData.firstName} ${formData.lastName}`.trim()
+                  : formData.username || 'Your profile'}
+              </p>
+            </div>
+            <p className="profile-modal-header-desc">
+              Update your contact details and account information. Fields marked with * are
+              required.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="profile-modal-close-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
         </div>
@@ -141,6 +167,82 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
         <div className="profile-modal-body">
           {activeTab === 'profile' ? (
             <form onSubmit={handleProfileSubmit} className="profile-modal-form">
+              <div className="profile-modal-contact-flex">
+                <div className="profile-modal-contact-card">
+                  <div className="profile-modal-contact-card-icon" aria-hidden="true">
+                    <Mail size={16} />
+                  </div>
+                  <div className="profile-modal-contact-card-body">
+                    <label htmlFor="email">Email *</label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleProfileChange}
+                      placeholder="Email"
+                      disabled={isLoading}
+                    />
+                    {errors.email && <span className="profile-modal-error">{errors.email}</span>}
+                  </div>
+                </div>
+
+                <div className="profile-modal-contact-card">
+                  <div className="profile-modal-contact-card-icon" aria-hidden="true">
+                    <Phone size={16} />
+                  </div>
+                  <div className="profile-modal-contact-card-body">
+                    <label htmlFor="phone">Phone *</label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleProfileChange}
+                      placeholder="Phone"
+                      disabled={isLoading}
+                    />
+                    {errors.phone && <span className="profile-modal-error">{errors.phone}</span>}
+                  </div>
+                </div>
+
+                <div className="profile-modal-contact-card">
+                  <div className="profile-modal-contact-card-icon" aria-hidden="true">
+                    <MapPin size={16} />
+                  </div>
+                  <div className="profile-modal-contact-card-body">
+                    <label htmlFor="location">Location</label>
+                    <input
+                      type="text"
+                      id="location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleProfileChange}
+                      placeholder="City / area"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <div className="profile-modal-contact-card">
+                  <div className="profile-modal-contact-card-icon" aria-hidden="true">
+                    <Clock size={16} />
+                  </div>
+                  <div className="profile-modal-contact-card-body">
+                    <label htmlFor="hours">Hours</label>
+                    <input
+                      type="text"
+                      id="hours"
+                      name="hours"
+                      value={formData.hours}
+                      onChange={handleProfileChange}
+                      placeholder="e.g. 9 AM - 6 PM"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="profile-modal-form-row">
                 <div className="profile-modal-form-group">
                   <label htmlFor="username">Username *</label>
@@ -160,25 +262,6 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
                 </div>
 
                 <div className="profile-modal-form-group">
-                  <label htmlFor="email">Email *</label>
-                  <div className="profile-modal-input-wrapper">
-                    <Mail size={14} className="profile-modal-input-icon" />
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleProfileChange}
-                      placeholder="Email"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.email && <span className="profile-modal-error">{errors.email}</span>}
-                </div>
-              </div>
-
-              <div className="profile-modal-form-row">
-                <div className="profile-modal-form-group">
                   <label htmlFor="firstName">First Name *</label>
                   <div className="profile-modal-input-wrapper">
                     <User size={14} className="profile-modal-input-icon" />
@@ -194,7 +277,9 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
                   </div>
                   {errors.firstName && <span className="profile-modal-error">{errors.firstName}</span>}
                 </div>
+              </div>
 
+              <div className="profile-modal-form-row">
                 <div className="profile-modal-form-group">
                   <label htmlFor="lastName">Last Name *</label>
                   <div className="profile-modal-input-wrapper">
@@ -211,25 +296,6 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
                   </div>
                   {errors.lastName && <span className="profile-modal-error">{errors.lastName}</span>}
                 </div>
-              </div>
-
-              <div className="profile-modal-form-row">
-                <div className="profile-modal-form-group">
-                  <label htmlFor="phone">Phone *</label>
-                  <div className="profile-modal-input-wrapper">
-                    <Phone size={14} className="profile-modal-input-icon" />
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleProfileChange}
-                      placeholder="Phone number"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.phone && <span className="profile-modal-error">{errors.phone}</span>}
-                </div>
 
                 <div className="profile-modal-form-group">
                   <label htmlFor="companyName">Company</label>
@@ -242,58 +308,6 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
                       value={formData.companyName}
                       onChange={handleProfileChange}
                       placeholder="Company name"
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="profile-modal-form-row">
-                <div className="profile-modal-form-group">
-                  <label htmlFor="address">Address</label>
-                  <div className="profile-modal-input-wrapper">
-                    <Home size={14} className="profile-modal-input-icon" />
-                    <input
-                      type="text"
-                      id="address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleProfileChange}
-                      placeholder="Street address"
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="profile-modal-form-row">
-                <div className="profile-modal-form-group">
-                  <label htmlFor="city">City</label>
-                  <div className="profile-modal-input-wrapper">
-                    <MapPin size={14} className="profile-modal-input-icon" />
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleProfileChange}
-                      placeholder="City"
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                <div className="profile-modal-form-group">
-                  <label htmlFor="state">State</label>
-                  <div className="profile-modal-input-wrapper">
-                    <MapPin size={14} className="profile-modal-input-icon" />
-                    <input
-                      type="text"
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleProfileChange}
-                      placeholder="State"
                       disabled={isLoading}
                     />
                   </div>
@@ -374,6 +388,6 @@ const ProfileModal = ({ isOpen, onClose, userData, onUpdateProfile, onChangePass
       </div>
     </>
   );
-};
+}
 
 export default ProfileModal;

@@ -1,0 +1,237 @@
+.reel-chart-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.reel-chart-toolbar-unified {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reel-chart-toolbar-title {
+  margin: 0;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.reel-chart-toolbar-unified .analytics-period-pill {
+  transition: none;
+}
+
+.reel-chart-toolbar-unified .analytics-period-pills,
+.reel-chart-toolbar-unified .reel-chart-period-pills {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.reel-chart-toolbar-segment {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  flex-shrink: 0;
+}
+
+.reel-chart-toolbar-period {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.reel-chart-toolbar-vrule {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.75rem;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.reel-chart-controls-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-right: 0.15rem;
+}
+
+.reel-chart-top-input {
+  width: 88px;
+  border-radius: 8px;
+}
+
+.reel-chart-controls-hint {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.reel-chart-dimension-limit-note {
+  font-size: 0.82rem;
+  color: #475569;
+  margin-top: 0.35rem;
+}
+
+.reel-chart-dimension-warn {
+  font-size: 0.82rem;
+  color: #b45309;
+  margin-top: 0.35rem;
+}
+
+.reel-chart-picker {
+  width: auto;
+  max-width: 180px;
+  min-width: 9rem;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+
+.reel-chart-period-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+.reel-chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.reel-chart-bar-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr minmax(120px, 40%);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.reel-chart-bar-rank {
+  font-weight: 700;
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.reel-chart-bar-label {
+  min-width: 0;
+}
+
+.reel-chart-bar-track {
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.reel-chart-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1e40af, #3b82f6);
+  border-radius: 999px;
+  min-width: 4px;
+  transition: none;
+}
+
+.reel-chart-dimension-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.reel-chart-dimension-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.reel-chart-dimension-head {
+  margin-bottom: 1rem;
+}
+
+.reel-chart-dimension-desc {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.35rem;
+}
+
+.reel-chart-subheading {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin: 0 0 0.65rem;
+}
+
+.reel-chart-report-block {
+  margin-bottom: 1.25rem;
+}
+
+.reel-chart-report-block-pie {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.reel-chart-report-block-table {
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.reel-chart-report-heading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.85rem;
+}
+
+.reel-chart-table-wrap {
+  margin-top: 0;
+}
+
+.reel-chart-table thead th {
+  background: #f8fafc;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #475569;
+}
+
+.reel-chart-reel-nos {
+  font-size: 0.85rem;
+  max-width: 280px;
+  word-break: break-word;
+}
+
+.reel-chart-toolbar-unified .reel-chart-controls-label {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .reel-chart-bar-row {
+    grid-template-columns: 2rem 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .reel-chart-bar-track {
+    grid-column: 2 / -1;
+  }
+}

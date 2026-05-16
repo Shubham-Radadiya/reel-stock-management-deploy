@@ -1,0 +1,129 @@
+.user-access-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1300;
+}
+
+.user-access-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 92vw);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  z-index: 1301;
+  overflow: hidden;
+}
+
+.user-access-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: #fff;
+}
+
+.user-access-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.user-access-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.user-access-header p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.user-access-close {
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.user-access-body {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.user-access-hint {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.user-access-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.user-access-row input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.user-access-row-main span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.user-access-row-main small {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.user-access-sections {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.user-access-sections.is-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.user-access-sections-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.user-access-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}

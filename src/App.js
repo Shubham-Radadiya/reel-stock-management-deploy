@@ -10,6 +10,7 @@ import {
   clearAuthToken,
   clearStoredUser,
   createReel,
+  createReelsBulk,
   fetchCurrentUser,
   deleteReel,
   fetchReels,
@@ -19,19 +20,24 @@ import {
   setStoredUser,
   toggleReel,
   updateReel,
-  fetchUsers
+  fetchUsers,
+  fetchStockMinimums
 } from './api/reelsApi';
 import { showError, showSuccess } from './utils/toastUtils';
+import { canUseReportsNav, resolveUserAccess } from './utils/userAccessUtils';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState('');
+  const [userAccess, setUserAccess] = useState(() => resolveUserAccess(null));
   const [activeTab, setActiveTab] = useState('reelstockmanagement');
   const [reels, setReels] = useState([]);
   const [users, setUsers] = useState([]);
+  const [stockMinimums, setStockMinimums] = useState([]);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isLoadingReels, setIsLoadingReels] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -47,7 +53,9 @@ function App() {
       try {
         const response = await fetchCurrentUser();
         setUserName(response.user.username);
+        setUserEmail(response.user.email || '');
         setUserRole(response.user.role || 'user');
+        setUserAccess(resolveUserAccess(response.user));
         setIsLoggedIn(true);
         return true;
       } catch (error) {
@@ -83,12 +91,18 @@ function App() {
     setAuthToken(response.token);
     setStoredUser(response.user);
     setUserName(response.user.username);
+    setUserEmail(response.user.email || '');
     setUserRole(response.user.role || 'user');
+    setUserAccess(resolveUserAccess(response.user));
     setIsLoggedIn(true);
     setIsLoadingReels(true);
     try {
       const data = await fetchReels();
       setReels(data);
+      if (response.user.role === 'admin') {
+        const minimums = await fetchStockMinimums();
+        setStockMinimums(minimums);
+      }
     } finally {
       setIsLoadingReels(false);
     }
@@ -101,7 +115,9 @@ function App() {
     clearStoredUser();
     setIsLoggedIn(false);
     setUserName('');
+    setUserEmail('');
     setUserRole('');
+    setUserAccess(resolveUserAccess(null));
     setUsers([]);
     showSuccess('Logged out successfully!');
   };
@@ -123,10 +139,38 @@ function App() {
   }, [isLoggedIn, userRole]);
 
   useEffect(() => {
+    const loadMinimums = async () => {
+      if (!isLoggedIn || userRole !== 'admin') {
+        setStockMinimums([]);
+        return;
+      }
+      try {
+        const data = await fetchStockMinimums();
+        setStockMinimums(data);
+      } catch (error) {
+        setStockMinimums([]);
+        const msg = String(error.message || '').toLowerCase();
+        if (!msg.includes('not found')) {
+          showError(`Failed to load minimum stock rules: ${error.message}`);
+        }
+      }
+    };
+    loadMinimums();
+  }, [isLoggedIn, userRole]);
+
+  useEffect(() => {
     if (userRole !== 'admin' && activeTab === 'users') {
       setActiveTab('reelstockmanagement');
     }
   }, [userRole, activeTab]);
+
+  const canAccessReports = canUseReportsNav(userAccess);
+
+  useEffect(() => {
+    if (!canAccessReports && activeTab === 'report') {
+      setActiveTab('reelstockmanagement');
+    }
+  }, [canAccessReports, activeTab]);
 
 
   if (isAuthChecking) {
@@ -156,14 +200,25 @@ function App() {
         onOpenProfile={() => setIsProfileModalOpen(true)}
         userName={userName}
         userRole={userRole}
+        canAccessReports={canAccessReports}
       >
         {activeTab === 'reelstockmanagement' ? (
           <ReelStockManagement
             reels={reels}
+            stockMinimums={stockMinimums}
+            userRole={userRole}
+            userName={userName}
             isLoading={isLoadingReels}
             onAddReel={async (newReel) => {
               const created = await createReel(newReel);
               setReels((prev) => [...prev, created]);
+            }}
+            onBulkAddReels={async (newReels) => {
+              const result = await createReelsBulk(newReels);
+              if (result.created?.length) {
+                setReels((prev) => [...prev, ...result.created]);
+              }
+              return result;
             }}
             onUpdateReel={async (reel) => {
               const updated = await updateReel(reel.id, reel);
@@ -179,7 +234,13 @@ function App() {
             }}
           />
         ) : activeTab === 'report' ? (
-          <Report reels={reels} />
+          <Report
+            reels={reels}
+            stockMinimums={stockMinimums}
+            setStockMinimums={setStockMinimums}
+            userRole={userRole}
+            userAccess={userAccess}
+          />
         ) : (
           <UsersManagement users={users} setUsers={setUsers} />
         )}
@@ -188,6 +249,23 @@ function App() {
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+        userData={{
+          username: userName,
+          firstName: userName?.split(' ')[0] || '',
+          lastName: userName?.split(' ').slice(1).join(' ') || '',
+          email: userEmail || 'user@example.com',
+          phone: '',
+          location: '',
+          hours: ''
+        }}
+        onUpdateProfile={async (profileData) => {
+          setUserName(profileData.username || userName);
+          setUserEmail(profileData.email || userEmail);
+          showSuccess('Profile updated');
+        }}
+        onChangePassword={async () => {
+          showSuccess('Password change is not connected to the server yet');
+        }}
       />
 
       <ToastContainerComponent />

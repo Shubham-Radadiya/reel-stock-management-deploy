@@ -37,6 +37,14 @@ const request = async (path, options = {}) => {
     } catch (error) {
       // ignore JSON parse error and use default message
     }
+    if (
+      response.status === 404 &&
+      message === 'Not found' &&
+      path.startsWith('/stock-minimums')
+    ) {
+      message =
+        'Minimum stock API is not available. Restart the backend (npm run server) after updating the code.';
+    }
     if (response.status === 401) {
       clearAuthToken();
       clearStoredUser();
@@ -65,12 +73,74 @@ export const createUser = (payload) =>
     body: JSON.stringify(payload)
   });
 
+export const updateUserAccess = (userId, access) =>
+  request(`/users/${userId}/access`, {
+    method: 'PUT',
+    body: JSON.stringify({ access })
+  });
+
 export const fetchReels = () => request('/reels');
+
+/** Returns [] when no rules exist or the API route is unavailable (404). */
+export const fetchStockMinimums = async () => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE}/stock-minimums`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  });
+
+  if (response.status === 404) {
+    return [];
+  }
+
+  if (!response.ok) {
+    let message = 'Request failed';
+    try {
+      const body = await response.json();
+      message = body.message || message;
+    } catch (error) {
+      // ignore JSON parse error
+    }
+    if (response.status === 401) {
+      clearAuthToken();
+      clearStoredUser();
+    }
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
+};
+
+export const createStockMinimum = (payload) =>
+  request('/stock-minimums', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const updateStockMinimum = (id, payload) =>
+  request(`/stock-minimums/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload)
+  });
+
+export const deleteStockMinimum = (id) =>
+  request(`/stock-minimums/${id}`, {
+    method: 'DELETE'
+  });
 
 export const createReel = (reel) =>
   request('/reels', {
     method: 'POST',
     body: JSON.stringify(reel)
+  });
+
+export const createReelsBulk = (reels) =>
+  request('/reels/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ reels })
   });
 
 export const updateReel = (id, reel) =>

@@ -621,12 +621,129 @@
   }
 }
 
-.report-section-head.matrix-section-head {
+.matrix-toolbar-unified {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.matrix-toolbar-title {
+  margin: 0;
+  align-self: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.matrix-toolbar-vrule {
+  width: 1px;
+  align-self: stretch;
+  min-height: 2.25rem;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.matrix-toolbar-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  flex-shrink: 0;
+}
+
+.matrix-toolbar-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.matrix-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 100px;
+}
+
+.matrix-filter-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin: 0;
+}
+
+.matrix-filter-input {
+  width: 110px;
+  border-radius: 8px;
+}
+
+.matrix-filter-clear {
+  align-self: flex-end;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+@media (max-width: 992px) {
+  .matrix-toolbar-unified {
+    flex-wrap: wrap;
+  }
+
+  .matrix-toolbar-vrule {
+    display: none;
+  }
+
+  .matrix-toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+.matrix-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.matrix-export-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.matrix-export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.matrix-export-btn-excel:hover:not(:disabled) {
+  border-color: #15803d;
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.matrix-export-btn-pdf:hover:not(:disabled) {
+  border-color: #b91c1c;
+  color: #b91c1c;
+  background: #fef2f2;
 }
 
 .matrix-columns-btn {
@@ -1466,4 +1583,63 @@
     font-size: 0.7rem;
     padding: 3px 8px;
   }
+}
+
+/* Minimum stock report (admin) */
+.min-stock-report-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.min-stock-report-banner {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid #fdba74;
+  color: #9a3412;
+}
+
+.min-stock-report-banner p {
+  font-size: 0.875rem;
+  margin-top: 0.35rem;
+  color: #7c2d12;
+}
+
+.min-stock-report-banner-ok {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.min-stock-report-banner-ok p {
+  color: #047857;
+}
+
+.min-stock-report-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #f8fafc;
+}
+
+.min-stock-report-row-low {
+  background: #fff7ed !important;
+}
+
+.min-stock-reel-nos {
+  font-size: 0.8rem;
+  max-width: 280px;
+  word-break: break-word;
+}
+
+.min-stock-report-all summary {
+  cursor: pointer;
+  user-select: none;
 }

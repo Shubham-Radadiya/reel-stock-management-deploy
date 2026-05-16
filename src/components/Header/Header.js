@@ -1,32 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Package, User, LayoutDashboard, FileBarChart, LogOut, Users } from 'lucide-react';
-import ProfileModal from './ProfileModal/ProfileModal';
 import './Header.css';
 
-const Header = ({ userName, userEmail, activeTab, setActiveTab, onLogout, onUpdateProfile, onChangePassword, userRole }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleProfileClick = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleUpdateProfile = (profileData) => {
-    if (onUpdateProfile) {
-      onUpdateProfile(profileData);
-    }
-    console.log('Profile updated:', profileData);
-  };
-
-  const handleChangePassword = (passwordData) => {
-    if (onChangePassword) {
-      onChangePassword(passwordData);
-    }
-    console.log('Password changed:', passwordData);
-  };
-
+const Header = ({ userName, activeTab, setActiveTab, onLogout, onOpenProfile, userRole, canAccessReports }) => {
   return (
-    <>
-      <header className="top-header">
+    <header className="top-header">
         <div className="header-content">
           <div className="header-left">
             <div className="logo-box">
@@ -45,14 +23,16 @@ const Header = ({ userName, userEmail, activeTab, setActiveTab, onLogout, onUpda
                 <LayoutDashboard size={18} />
                 <span>Reel Stock Management</span>
               </button>
-              <button
-                type="button"
-                className={`nav-tab ${activeTab === 'report' ? 'active' : ''}`}
-                onClick={() => setActiveTab('report')}
-              >
-                <FileBarChart size={18} />
-                <span>Reports</span>
-              </button>
+              {canAccessReports && (
+                <button
+                  type="button"
+                  className={`nav-tab ${activeTab === 'report' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('report')}
+                >
+                  <FileBarChart size={18} />
+                  <span>Reports</span>
+                </button>
+              )}
               {userRole === 'admin' && (
                 <button
                   type="button"
@@ -71,9 +51,10 @@ const Header = ({ userName, userEmail, activeTab, setActiveTab, onLogout, onUpda
               <div className="user-details text-end">
                 <div className="user-name">{userName || 'User'}</div>
               </div>
-              <button 
-                onClick={handleProfileClick} 
-                className="avatar-box" 
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className="avatar-box"
                 title="Profile Settings"
                 style={{ cursor: 'pointer' }}
               >
@@ -85,21 +66,7 @@ const Header = ({ userName, userEmail, activeTab, setActiveTab, onLogout, onUpda
             </div>
           </div>
         </div>
-      </header>
-
-      <ProfileModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        userData={{
-          name: userName,
-          email: userEmail || 'user@example.com',
-          phone: '',
-          department: ''
-        }}
-        onUpdateProfile={handleUpdateProfile}
-        onChangePassword={handleChangePassword}
-      />
-    </>
+    </header>
   );
 };
 

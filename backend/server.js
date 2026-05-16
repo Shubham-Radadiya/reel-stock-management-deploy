@@ -83,15 +83,57 @@ app.use((req, res, next) => {
   return next();
 });
 
+const accessShape = {
+  reports: { type: Boolean, default: false },
+  matrix: { type: Boolean, default: false },
+  analytics: { type: Boolean, default: false },
+  reelchart: { type: Boolean, default: false },
+  minimum: { type: Boolean, default: false }
+};
+
 const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, unique: true, sparse: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'user'], default: 'user' }
+    /** Visible to admin only (set on create / password reset). */
+    plainPassword: { type: String, default: '' },
+    role: { type: String, enum: ['admin', 'user'], default: 'user' },
+    access: accessShape
   },
   { timestamps: true }
 );
+
+const fullAccess = () => ({
+  reports: true,
+  matrix: true,
+  analytics: true,
+  reelchart: true,
+  minimum: true
+});
+
+const legacyUserAccess = () => ({
+  reports: true,
+  matrix: true,
+  analytics: true,
+  reelchart: false,
+  minimum: false
+});
+
+const resolveUserAccess = (user) => {
+  if (user?.role === 'admin') return fullAccess();
+  const a = user?.access;
+  if (a && typeof a === 'object' && ('reports' in a || 'matrix' in a)) {
+    return {
+      reports: Boolean(a.reports),
+      matrix: Boolean(a.matrix),
+      analytics: Boolean(a.analytics),
+      reelchart: Boolean(a.reelchart),
+      minimum: Boolean(a.minimum)
+    };
+  }
+  return legacyUserAccess();
+};
 
 const reelSchema = new mongoose.Schema(
   {
@@ -118,18 +160,57 @@ reelSchema.set('toJSON', {
   }
 });
 
+userSchema.methods.toSafeJSON = function toSafeJSON() {
+  const ret = this.toObject();
+  ret.id = ret._id.toString();
+  delete ret._id;
+  delete ret.__v;
+  delete ret.passwordHash;
+  delete ret.plainPassword;
+  ret.access = resolveUserAccess(this);
+  return ret;
+};
+
+userSchema.methods.toAdminJSON = function toAdminJSON() {
+  const ret = this.toSafeJSON();
+  ret.plainPassword = this.plainPassword || '';
+  return ret;
+};
+
 userSchema.set('toJSON', {
   transform: (_, ret) => {
     ret.id = ret._id.toString();
     delete ret._id;
     delete ret.__v;
     delete ret.passwordHash;
+    delete ret.plainPassword;
+    return ret;
+  }
+});
+
+const stockMinimumSchema = new mongoose.Schema(
+  {
+    size: { type: String, required: true, trim: true },
+    gsm: { type: String, required: true, trim: true },
+    minReels: { type: Number, required: true, min: 0 }
+  },
+  { timestamps: true }
+);
+
+stockMinimumSchema.index({ size: 1, gsm: 1 }, { unique: true });
+
+stockMinimumSchema.set('toJSON', {
+  transform: (_, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
     return ret;
   }
 });
 
 const User = mongoose.model('User', userSchema);
 const Reel = mongoose.model('Reel', reelSchema);
+const StockMinimum = mongoose.model('StockMinimum', stockMinimumSchema);
 
 /** Mongoose Connection#readyState — helps interpret /api/health without looking up numbers. */
 const mongoPhase = () =>
@@ -151,8 +232,9 @@ const createToken = (user) =>
     {
       sub: user._id.toString(),
       username: user.username,
-      email: user.email,
-      role: user.role
+      email: user.email || '',
+      role: user.role,
+      access: resolveUserAccess(user)
     },
     jwtSecretForAuth(),
     { expiresIn: '7d' }
@@ -212,10 +294,18 @@ const seedInitialData = async () => {
       username: adminUsername,
       email: adminEmail,
       passwordHash: adminHash,
-      role: 'admin'
+      plainPassword: adminPassword,
+      role: 'admin',
+      access: fullAccess()
     });
-  } else if (adminUser.role !== 'admin') {
-    adminUser.role = 'admin';
+  } else {
+    if (adminUser.role !== 'admin') {
+      adminUser.role = 'admin';
+    }
+    adminUser.access = fullAccess();
+    if (!adminUser.plainPassword) {
+      adminUser.plainPassword = adminPassword;
+    }
     await adminUser.save();
   }
 
@@ -226,8 +316,19 @@ const seedInitialData = async () => {
       username: defaultUsername,
       email: defaultUserEmail,
       passwordHash: defaultUserHash,
-      role: 'user'
+      plainPassword: defaultUserPassword,
+      role: 'user',
+      access: legacyUserAccess()
     });
+  }
+
+  const usersMissingAccess = await User.find({
+    role: { $ne: 'admin' },
+    $or: [{ access: { $exists: false } }, { access: null }]
+  });
+  for (const u of usersMissingAccess) {
+    u.access = legacyUserAccess();
+    await u.save();
   }
 
   const reelCount = await Reel.countDocuments();
@@ -293,7 +394,7 @@ app.post('/api/auth/login', async (req, res) => {
     return res.json({
       message: 'Login successful',
       token: createToken(user),
-      user: user.toJSON()
+      user: user.toSafeJSON()
     });
   } catch (err) {
     console.error('[login]', err && err.message ? err.message : err);
@@ -305,44 +406,219 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.get('/api/auth/me', authenticate, async (req, res) => {
-  res.json({ user: req.user.toJSON() });
+  res.json({ user: req.user.toSafeJSON() });
 });
 
 app.get('/api/users', authenticate, authorizeAdmin, async (req, res) => {
   const users = await User.find().sort({ createdAt: -1 });
-  res.json(users.map((u) => u.toJSON()));
+  res.json(users.map((u) => u.toAdminJSON()));
 });
 
 app.post('/api/users', authenticate, authorizeAdmin, async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, access } = req.body;
+  const trimmedUsername = typeof username === 'string' ? username.trim() : '';
 
-  if (!username || !email || !password) {
-    return res
-      .status(400)
-      .json({ message: 'username, email, and password are required' });
+  if (!trimmedUsername || !password) {
+    return res.status(400).json({ message: 'username and password are required' });
   }
 
-  const existing = await User.findOne({
-    $or: [{ username }, { email }]
-  });
+  const existing = await User.findOne({ username: trimmedUsername });
   if (existing) {
-    return res.status(409).json({ message: 'User already exists' });
+    return res.status(409).json({ message: 'Username already exists' });
+  }
+
+  const trimmedEmail =
+    typeof email === 'string' && email.trim() ? email.trim().toLowerCase() : undefined;
+  if (trimmedEmail) {
+    const emailTaken = await User.findOne({ email: trimmedEmail });
+    if (emailTaken) {
+      return res.status(409).json({ message: 'Email already in use' });
+    }
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
+  const isAdmin = role === 'admin';
   const newUser = await User.create({
-    username,
-    email,
+    username: trimmedUsername,
+    ...(trimmedEmail ? { email: trimmedEmail } : {}),
     passwordHash,
-    role: role === 'admin' ? 'admin' : 'user'
+    plainPassword: String(password),
+    role: isAdmin ? 'admin' : 'user',
+    access: isAdmin
+      ? fullAccess()
+      : {
+          reports: Boolean(access?.reports),
+          matrix: Boolean(access?.matrix),
+          analytics: Boolean(access?.analytics),
+          reelchart: Boolean(access?.reelchart),
+          minimum: Boolean(access?.minimum)
+        }
   });
 
-  res.status(201).json(newUser.toJSON());
+  res.status(201).json(newUser.toAdminJSON());
+});
+
+app.put('/api/users/:id/access', authenticate, authorizeAdmin, async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  if (user.role === 'admin') {
+    return res.status(400).json({ message: 'Admin access cannot be changed here' });
+  }
+
+  const { access } = req.body || {};
+  user.access = {
+    reports: Boolean(access?.reports),
+    matrix: Boolean(access?.matrix),
+    analytics: Boolean(access?.analytics),
+    reelchart: Boolean(access?.reelchart),
+    minimum: Boolean(access?.minimum)
+  };
+  if (user.access.reports) {
+    if (
+      !user.access.matrix &&
+      !user.access.analytics &&
+      !user.access.reelchart &&
+      !user.access.minimum
+    ) {
+      user.access.matrix = true;
+    }
+  } else {
+    user.access.matrix = false;
+    user.access.analytics = false;
+    user.access.reelchart = false;
+    user.access.minimum = false;
+  }
+
+  await user.save();
+  res.json(user.toAdminJSON());
+});
+
+app.get('/api/stock-minimums', authenticate, async (req, res) => {
+  const items = await StockMinimum.find().sort({ size: 1, gsm: 1 });
+  res.json(items.map((item) => item.toJSON()));
+});
+
+app.post('/api/stock-minimums', authenticate, authorizeAdmin, async (req, res) => {
+  const size = String(req.body.size || '').trim();
+  const gsm = String(req.body.gsm || '').trim();
+  const minReels = parseInt(req.body.minReels, 10);
+
+  if (!size || !gsm) {
+    return res.status(400).json({ message: 'size and gsm are required' });
+  }
+  if (!Number.isFinite(minReels) || minReels < 0) {
+    return res.status(400).json({ message: 'minReels must be a non-negative number' });
+  }
+
+  try {
+    const item = await StockMinimum.create({ size, gsm, minReels });
+    return res.status(201).json(item.toJSON());
+  } catch (err) {
+    if (err.code === 11000) {
+      return res
+        .status(409)
+        .json({ message: 'Minimum stock already exists for this Size + GSM' });
+    }
+    throw err;
+  }
+});
+
+app.put('/api/stock-minimums/:id', authenticate, authorizeAdmin, async (req, res) => {
+  const item = await StockMinimum.findById(req.params.id);
+  if (!item) {
+    return res.status(404).json({ message: 'Minimum stock rule not found' });
+  }
+
+  const size =
+    req.body.size != null ? String(req.body.size).trim() : item.size;
+  const gsm = req.body.gsm != null ? String(req.body.gsm).trim() : item.gsm;
+  const minReels =
+    req.body.minReels != null ? parseInt(req.body.minReels, 10) : item.minReels;
+
+  if (!size || !gsm) {
+    return res.status(400).json({ message: 'size and gsm are required' });
+  }
+  if (!Number.isFinite(minReels) || minReels < 0) {
+    return res.status(400).json({ message: 'minReels must be a non-negative number' });
+  }
+
+  item.size = size;
+  item.gsm = gsm;
+  item.minReels = minReels;
+
+  try {
+    await item.save();
+    return res.json(item.toJSON());
+  } catch (err) {
+    if (err.code === 11000) {
+      return res
+        .status(409)
+        .json({ message: 'Minimum stock already exists for this Size + GSM' });
+    }
+    throw err;
+  }
+});
+
+app.delete('/api/stock-minimums/:id', authenticate, authorizeAdmin, async (req, res) => {
+  const deleted = await StockMinimum.findByIdAndDelete(req.params.id);
+  if (!deleted) {
+    return res.status(404).json({ message: 'Minimum stock rule not found' });
+  }
+  return res.status(204).send();
 });
 
 app.get('/api/reels', authenticate, async (req, res) => {
   const reels = await Reel.find().sort({ date: -1, createdAt: -1 });
   res.json(reels.map((r) => r.toJSON()));
+});
+
+app.post('/api/reels/bulk', authenticate, async (req, res) => {
+  const { reels: items } = req.body;
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'reels array is required' });
+  }
+  if (items.length > 500) {
+    return res.status(400).json({ message: 'Maximum 500 rows per import' });
+  }
+
+  const created = [];
+  const errors = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const payload = items[i] || {};
+    const srNo = String(payload.srNo || '').trim();
+    const reelNo = String(payload.reelNo || '').trim();
+    if (!srNo || !reelNo) {
+      errors.push({ row: i + 1, message: 'SR No and Reel No are required' });
+      continue;
+    }
+    try {
+      const reel = await Reel.create({
+        date: payload.date || '',
+        srNo,
+        reelNo,
+        shade: payload.shade || '',
+        bf: payload.bf || '',
+        gsm: payload.gsm || '',
+        size: payload.size || '',
+        weight: payload.weight != null ? String(payload.weight) : '',
+        isCheckedOut: false,
+        outDate: ''
+      });
+      created.push(reel.toJSON());
+    } catch (err) {
+      errors.push({ row: i + 1, message: err.message || 'Failed to create reel' });
+    }
+  }
+
+  return res.status(201).json({
+    created,
+    errors,
+    imported: created.length,
+    failed: errors.length
+  });
 });
 
 app.post('/api/reels', authenticate, async (req, res) => {

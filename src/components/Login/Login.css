@@ -1,15 +1,21 @@
 /* Login Container */
 .login-wrapper {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  gap: 2rem;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 50%, rgba(16, 185, 129, 0.12), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 20%, rgba(56, 189, 248, 0.08), transparent 50%),
+    linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
 .login-card {
   width: 100%;
   max-width: 400px;
+  flex-shrink: 0;
   background: white;
   padding: 2rem;
   border-radius: 1rem;

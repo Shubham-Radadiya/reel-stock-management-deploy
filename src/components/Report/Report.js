@@ -5,7 +5,12 @@ import {
   X,
   LayoutGrid,
   TrendingUp,
-  ListFilter
+  ListFilter,
+  Gauge,
+  AlertTriangle,
+  PieChart,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import {
   format,
@@ -28,20 +33,86 @@ import {
   formatDisplayDateTime,
   toEntryDateYmd
 } from '../../utils/reelDateUtils';
+import {
+  buildStockMinimumStatus,
+  getLowStockItems,
+  getInStockReelsForRule
+} from '../../utils/stockMinimumUtils';
+import { fetchStockMinimums } from '../../api/reelsApi';
+import MinimumStockManagement from '../MinimumStockManagement/MinimumStockManagement';
+import ReelChartReport from './ReelChartReport';
+import {
+  exportMatrixToExcel,
+  exportMatrixToPdf,
+  matchesMatrixNumberFilter
+} from '../../utils/matrixExportUtils';
+import { showError, showSuccess } from '../../utils/toastUtils';
+import { getAllowedReportTabs } from '../../utils/userAccessUtils';
 
-const SUB_TABS = [
-  { id: 'matrix', label: 'Matrix', icon: LayoutGrid },
-  { id: 'analytics', label: 'Analytics', icon: TrendingUp }
-];
+const MATRIX_TAB = { id: 'matrix', label: 'Matrix', icon: LayoutGrid };
+const ANALYTICS_TAB = { id: 'analytics', label: 'Analytics', icon: TrendingUp };
+const REEL_CHART_TAB = { id: 'reelchart', label: 'Reel Chart', icon: PieChart };
+const MIN_STOCK_TAB = { id: 'minimum', label: 'Minimum stock', icon: Gauge };
 
-const Report = ({ reels }) => {
-  const [reportSubTab, setReportSubTab] = useState('matrix');
+const ALL_REPORT_TABS = [MATRIX_TAB, ANALYTICS_TAB, REEL_CHART_TAB, MIN_STOCK_TAB];
+const TAB_BY_ID = Object.fromEntries(ALL_REPORT_TABS.map((t) => [t.id, t]));
+
+const Report = ({ reels, stockMinimums = [], setStockMinimums, userRole, userAccess }) => {
+  const isAdmin = userRole === 'admin';
+  const allowedTabIds = useMemo(
+    () => (isAdmin ? ALL_REPORT_TABS.map((t) => t.id) : getAllowedReportTabs(userAccess)),
+    [isAdmin, userAccess]
+  );
+  const subTabs = useMemo(
+    () => allowedTabIds.map((id) => TAB_BY_ID[id]).filter(Boolean),
+    [allowedTabIds]
+  );
+
+  const [reportSubTab, setReportSubTab] = useState(() => allowedTabIds[0] || 'matrix');
+
+  useEffect(() => {
+    if (!allowedTabIds.includes(reportSubTab)) {
+      setReportSubTab(allowedTabIds[0] || 'matrix');
+    }
+  }, [allowedTabIds, reportSubTab]);
+
+  const minStockStatus = useMemo(
+    () => buildStockMinimumStatus(reels, stockMinimums),
+    [reels, stockMinimums]
+  );
+  const lowMinStock = useMemo(
+    () => getLowStockItems(reels, stockMinimums),
+    [reels, stockMinimums]
+  );
+
+  useEffect(() => {
+    if (reportSubTab !== 'minimum' || !allowedTabIds.includes('minimum')) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchStockMinimums();
+        if (!cancelled) setStockMinimums(data);
+      } catch (error) {
+        if (!cancelled) {
+          showError(error.message || 'Failed to load minimum stock rules');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reportSubTab, allowedTabIds, setStockMinimums]);
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [modalData, setModalData] = useState([]);
   const [modalTitle, setModalTitle] = useState('');
 
   const [matrixColPickerOpen, setMatrixColPickerOpen] = useState(false);
+  const [matrixSizeFilter, setMatrixSizeFilter] = useState('');
+  const [matrixGsmFilter, setMatrixGsmFilter] = useState('');
+  const [matrixBfFilter, setMatrixBfFilter] = useState('');
 
   const [analyticsPeriod, setAnalyticsPeriod] = useState('day');
   const [analyticsDayInput, setAnalyticsDayInput] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -100,6 +171,35 @@ const Report = ({ reels }) => {
   const matrixHasHiddenColumns =
     visibleCombinations.length > 0 && visibleCombinations.length < matrix.combinations.length;
 
+  const matrixHasActiveFilters =
+    isAdmin &&
+    (matrixSizeFilter.trim() !== '' ||
+      matrixGsmFilter.trim() !== '' ||
+      matrixBfFilter.trim() !== '');
+
+  const matrixDisplaySizes = useMemo(() => {
+    if (!isAdmin || !matrixSizeFilter.trim()) return matrix.sizes;
+    return matrix.sizes.filter((s) => matchesMatrixNumberFilter(s, matrixSizeFilter));
+  }, [matrix.sizes, matrixSizeFilter, isAdmin]);
+
+  const matrixDisplayCombinations = useMemo(() => {
+    if (!isAdmin) return visibleCombinations;
+    let combos = visibleCombinations;
+    if (matrixGsmFilter.trim()) {
+      combos = combos.filter((c) => matchesMatrixNumberFilter(c.gsm, matrixGsmFilter));
+    }
+    if (matrixBfFilter.trim()) {
+      combos = combos.filter((c) => matchesMatrixNumberFilter(c.bf, matrixBfFilter));
+    }
+    return combos;
+  }, [visibleCombinations, matrixGsmFilter, matrixBfFilter, isAdmin]);
+
+  const clearMatrixFilters = () => {
+    setMatrixSizeFilter('');
+    setMatrixGsmFilter('');
+    setMatrixBfFilter('');
+  };
+
   const toggleMatrixColumn = (key) => {
     setMatrixVisibleKeys((prev) => {
       const next = new Set(prev);
@@ -121,6 +221,14 @@ const Report = ({ reels }) => {
     availableReels.filter(
       (r) => r.size === size && `${r.shade}_${r.bf}_${r.gsm}` === comboKey
     ).length;
+
+  const getMatrixViewGrandTotal = () =>
+    matrixDisplaySizes.reduce(
+      (sum, size) =>
+        sum +
+        matrixDisplayCombinations.reduce((rowSum, combo) => rowSum + getCount(size, combo.key), 0),
+      0
+    );
 
   const getReelsByCombo = (size, comboKey) =>
     availableReels.filter(
@@ -155,6 +263,46 @@ const Report = ({ reels }) => {
     setModalTitle(`All Available Stock - Total: ${availableReels.length} Reels`);
     setModalData(availableReels);
     setShowDetailsModal(true);
+  };
+
+  const getMatrixExportPayload = () => ({
+    sizes: matrixDisplaySizes,
+    combinations: matrixDisplayCombinations,
+    getCount,
+    getComboTotal: (comboKey) =>
+      matrixDisplaySizes.reduce((sum, size) => sum + getCount(size, comboKey), 0),
+    grandTotal: getMatrixViewGrandTotal()
+  });
+
+  const canExportMatrix =
+    availableReels.length > 0 &&
+    matrixDisplayCombinations.length > 0 &&
+    matrixDisplaySizes.length > 0;
+
+  const handleMatrixExportExcel = () => {
+    if (!canExportMatrix) {
+      showError('Nothing to export. Ensure stock is available and columns are visible.');
+      return;
+    }
+    try {
+      exportMatrixToExcel(getMatrixExportPayload());
+      showSuccess('Matrix exported to Excel');
+    } catch {
+      showError('Could not export to Excel');
+    }
+  };
+
+  const handleMatrixExportPdf = () => {
+    if (!canExportMatrix) {
+      showError('Nothing to export. Ensure stock is available and columns are visible.');
+      return;
+    }
+    try {
+      exportMatrixToPdf(getMatrixExportPayload());
+      showSuccess('Matrix exported to PDF');
+    } catch {
+      showError('Could not export to PDF');
+    }
   };
 
   const analyticsRange = useMemo(() => {
@@ -313,7 +461,7 @@ const Report = ({ reels }) => {
             <span className="report-page-title-inline">Reports</span>
           </div>
           <nav className="report-subnav" aria-label="Report types">
-            {SUB_TABS.map(({ id, label, icon: Icon }) => (
+            {subTabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 type="button"
@@ -331,21 +479,101 @@ const Report = ({ reels }) => {
       <div className="report-page-body">
         {reportSubTab === 'matrix' && (
           <section className="report-section">
-            <div className="report-section-head matrix-section-head">
-              <div>
-                <h2 className="report-section-title">Stock availability matrix</h2>
+            <div className="matrix-toolbar-unified">
+              <h2 className="report-section-title matrix-toolbar-title">Stock availability matrix</h2>
+
+              {isAdmin && availableReels.length > 0 && (
+                <>
+                  <span className="matrix-toolbar-vrule" aria-hidden />
+                  <div className="matrix-toolbar-filters" role="search">
+                <div className="matrix-filter-field">
+                  <label className="matrix-filter-label" htmlFor="matrix-filter-size">
+                    Size
+                  </label>
+                  <input
+                    id="matrix-filter-size"
+                    type="number"
+                    className="form-control form-control-sm matrix-filter-input"
+                    placeholder="All"
+                    value={matrixSizeFilter}
+                    onChange={(e) => setMatrixSizeFilter(e.target.value)}
+                    aria-label="Filter matrix by size"
+                  />
+                </div>
+                <div className="matrix-filter-field">
+                  <label className="matrix-filter-label" htmlFor="matrix-filter-gsm">
+                    GSM
+                  </label>
+                  <input
+                    id="matrix-filter-gsm"
+                    type="number"
+                    className="form-control form-control-sm matrix-filter-input"
+                    placeholder="All"
+                    value={matrixGsmFilter}
+                    onChange={(e) => setMatrixGsmFilter(e.target.value)}
+                    aria-label="Filter matrix by GSM"
+                  />
+                </div>
+                <div className="matrix-filter-field">
+                  <label className="matrix-filter-label" htmlFor="matrix-filter-bf">
+                    BF
+                  </label>
+                  <input
+                    id="matrix-filter-bf"
+                    type="number"
+                    className="form-control form-control-sm matrix-filter-input"
+                    placeholder="All"
+                    value={matrixBfFilter}
+                    onChange={(e) => setMatrixBfFilter(e.target.value)}
+                    aria-label="Filter matrix by BF"
+                  />
+                </div>
+                {matrixHasActiveFilters && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary matrix-filter-clear"
+                    onClick={clearMatrixFilters}
+                  >
+                    Clear
+                  </button>
+                )}
+                  </div>
+                </>
+              )}
+
+              <div className="matrix-toolbar-actions">
+                <button
+                  type="button"
+                  className="matrix-export-btn matrix-export-btn-excel"
+                  onClick={handleMatrixExportExcel}
+                  disabled={!canExportMatrix}
+                  title="Export matrix to Excel"
+                >
+                  <FileSpreadsheet size={16} aria-hidden />
+                  Excel
+                </button>
+                <button
+                  type="button"
+                  className="matrix-export-btn matrix-export-btn-pdf"
+                  onClick={handleMatrixExportPdf}
+                  disabled={!canExportMatrix}
+                  title="Export matrix to PDF"
+                >
+                  <FileText size={16} aria-hidden />
+                  PDF
+                </button>
+                <button
+                  type="button"
+                  className={`matrix-columns-btn${matrixHasHiddenColumns ? ' has-hidden' : ''}`}
+                  onClick={() => setMatrixColPickerOpen((o) => !o)}
+                  aria-expanded={matrixColPickerOpen}
+                  aria-controls="matrix-col-picker"
+                  title="Show or hide BF|GSM columns"
+                >
+                  <ListFilter size={16} aria-hidden />
+                  Columns
+                </button>
               </div>
-              <button
-                type="button"
-                className={`matrix-columns-btn${matrixHasHiddenColumns ? ' has-hidden' : ''}`}
-                onClick={() => setMatrixColPickerOpen((o) => !o)}
-                aria-expanded={matrixColPickerOpen}
-                aria-controls="matrix-col-picker"
-                title="Show or hide BF|GSM columns"
-              >
-                <ListFilter size={16} aria-hidden />
-                Columns
-              </button>
             </div>
             {availableReels.length === 0 ? (
               <div className="report-empty text-center py-5">
@@ -358,6 +586,18 @@ const Report = ({ reels }) => {
                 <div className="alert alert-warning mb-0" role="status">
                   Select at least one BF|GSM column using <strong>Columns</strong>.
                 </div>
+              ) : matrixDisplaySizes.length === 0 || matrixDisplayCombinations.length === 0 ? (
+                <div className="alert alert-info mb-0" role="status">
+                  No rows or columns match the current filters. Adjust Size, GSM, or BF, or{' '}
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0 align-baseline"
+                    onClick={clearMatrixFilters}
+                  >
+                    clear filters
+                  </button>
+                  .
+                </div>
               ) : (
               <div className="matrix-wrapper">
                 <div className="matrix-scroll-container">
@@ -366,7 +606,7 @@ const Report = ({ reels }) => {
                     <thead>
                       <tr className="matrix-header-main">
                         <th className="size-col header-corner">SIZE ↓ / BF|GSM →</th>
-                        {visibleCombinations.map((c) => (
+                        {matrixDisplayCombinations.map((c) => (
                           <th key={c.key} className="combo-col">
                             <div className="combo-info">
                               <span className="combo-shade">{c.shade}</span>
@@ -380,8 +620,8 @@ const Report = ({ reels }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {matrix.sizes.map((size) => {
-                        const rowTotal = visibleCombinations.reduce(
+                      {matrixDisplaySizes.map((size) => {
+                        const rowTotal = matrixDisplayCombinations.reduce(
                           (sum, combo) => sum + getCount(size, combo.key),
                           0
                         );
@@ -394,7 +634,7 @@ const Report = ({ reels }) => {
                             >
                               {size}
                             </td>
-                            {visibleCombinations.map((combo) => {
+                            {matrixDisplayCombinations.map((combo) => {
                               const count = getCount(size, combo.key);
                               return (
                                 <td
@@ -429,10 +669,11 @@ const Report = ({ reels }) => {
                         >
                           TOTAL
                         </td>
-                        {visibleCombinations.map((combo) => {
-                          const total = availableReels.filter(
-                            (r) => `${r.shade}_${r.bf}_${r.gsm}` === combo.key
-                          ).length;
+                        {matrixDisplayCombinations.map((combo) => {
+                          const total = matrixDisplaySizes.reduce(
+                            (sum, size) => sum + getCount(size, combo.key),
+                            0
+                          );
                           return (
                             <td
                               key={combo.key}
@@ -449,7 +690,7 @@ const Report = ({ reels }) => {
                           onClick={handleGrandTotalClick}
                           style={{ cursor: 'pointer' }}
                         >
-                          {availableReels.length}
+                          {getMatrixViewGrandTotal()}
                         </td>
                       </tr>
                     </tbody>
@@ -669,6 +910,117 @@ const Report = ({ reels }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </section>
+        )}
+
+        {reportSubTab === 'reelchart' && isAdmin && <ReelChartReport reels={reels} />}
+
+        {reportSubTab === 'minimum' && isAdmin && (
+          <section className="report-section report-section-minimum">
+            <MinimumStockManagement
+              embedded
+              reels={reels}
+              stockMinimums={stockMinimums}
+              setStockMinimums={setStockMinimums}
+            />
+            <div className="report-section-head mt-4">
+              <h2 className="report-section-title">Below minimum stock</h2>
+            </div>
+            <div className="min-stock-report-card">
+              {stockMinimums.length === 0 ? (
+                <p className="text-muted mb-0">
+                  No minimum rules yet. Add rules in the section above, then this area will list any
+                  Size + GSM groups that fall below their minimum in-stock count.
+                </p>
+              ) : lowMinStock.length === 0 ? (
+                <div className="min-stock-report-banner min-stock-report-banner-ok" role="status">
+                  <Gauge size={22} aria-hidden />
+                  <div>
+                    <strong>All groups meet minimum stock</strong>
+                    <p className="mb-0">
+                      Every Size + GSM rule you configured has enough reels marked in stock in the
+                      system. This report is for checking only — it does not change reel data.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="min-stock-report-banner" role="alert">
+                    <AlertTriangle size={22} aria-hidden />
+                    <div>
+                      <strong>Reels not maintaining minimum stock</strong>
+                      <p className="mb-0">
+                        The groups below have fewer in-stock reels than the minimum you configured
+                        (Size + GSM). This report is for checking only — it does not change any reel
+                        data. Please check physical stock and update entries in Reel Stock Management.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="table-responsive">
+                  <table className="table table-bordered min-stock-report-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Size</th>
+                        <th>GSM</th>
+                        <th>Min required</th>
+                        <th>In stock now</th>
+                        <th>Short by</th>
+                        <th>In-stock reel nos.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lowMinStock.map((row) => {
+                        const inStock = getInStockReelsForRule(reels, row.size, row.gsm);
+                        return (
+                          <tr key={row.id} className="min-stock-report-row-low">
+                            <td>{row.size}</td>
+                            <td>{row.gsm}</td>
+                            <td>{row.minReels}</td>
+                            <td className="text-danger fw-bold">{row.current}</td>
+                            <td className="fw-semibold">{row.shortfall}</td>
+                            <td className="min-stock-reel-nos">
+                              {inStock.length
+                                ? inStock.map((r) => r.reelNo).join(', ')
+                                : '— none in system —'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                </>
+              )}
+              {minStockStatus.length > 0 && (
+                <details className="min-stock-report-all mt-3">
+                  <summary className="small text-muted">View all Size + GSM rules</summary>
+                  <div className="table-responsive mt-2">
+                    <table className="table table-sm table-striped mb-0">
+                      <thead>
+                        <tr>
+                          <th>Size</th>
+                          <th>GSM</th>
+                          <th>Min</th>
+                          <th>In stock</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {minStockStatus.map((row) => (
+                          <tr key={row.id}>
+                            <td>{row.size}</td>
+                            <td>{row.gsm}</td>
+                            <td>{row.minReels}</td>
+                            <td>{row.current}</td>
+                            <td>{row.isLow ? 'Below minimum' : 'OK'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
             </div>
           </section>
         )}
