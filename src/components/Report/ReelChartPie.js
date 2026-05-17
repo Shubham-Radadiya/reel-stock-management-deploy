@@ -107,6 +107,6 @@ const ReelChartPie = memo(({ rows, totalOut, ariaLabel = 'Check-outs distributio
       </ul>
     </div>
   );
-};
+});
 
 export default ReelChartPie;

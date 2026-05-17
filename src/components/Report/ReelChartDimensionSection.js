@@ -22,12 +22,12 @@ const ReelChartDimensionSection = memo(({
   topN,
   groupedTotal = 0
 }) => {
-  if (!rows.length) return null;
-
   const reelNosDisplay = useMemo(
     () => rows.map((row) => formatReelNos(row.reelNos)),
     [rows]
   );
+
+  if (!rows.length) return null;
 
   const groupedSum = groupedTotal || rows.reduce((s, r) => s + r.count, 0);
   const ungrouped = Math.max(0, totalOut - groupedSum);
@@ -102,6 +102,6 @@ const ReelChartDimensionSection = memo(({
       </div>
     </section>
   );
-}));
+});
 
 export default ReelChartDimensionSection;
