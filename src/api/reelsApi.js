@@ -79,6 +79,12 @@ export const updateUserAccess = (userId, access) =>
     body: JSON.stringify({ access })
   });
 
+export const updateUserPassword = (userId, password) =>
+  request(`/users/${userId}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ password })
+  });
+
 export const fetchReels = () => request('/reels');
 
 /** Returns [] when no rules exist or the API route is unavailable (404). */

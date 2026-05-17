@@ -10,8 +10,9 @@ const formatReelNos = (reelNos) => {
   return `${reelNos.slice(0, 10).join(', ')} +${reelNos.length - 10} more`;
 };
 
-const ReelChartDimensionSection = memo(function ReelChartDimensionSection({
+const ReelChartDimensionSection = memo(({
   title,
+  description,
   rows,
   totalOut,
   variant,
@@ -20,13 +21,13 @@ const ReelChartDimensionSection = memo(function ReelChartDimensionSection({
   totalRows,
   topN,
   groupedTotal = 0
-}) {
+}) => {
+  if (!rows.length) return null;
+
   const reelNosDisplay = useMemo(
     () => rows.map((row) => formatReelNos(row.reelNos)),
     [rows]
   );
-
-  if (!rows.length) return null;
 
   const groupedSum = groupedTotal || rows.reduce((s, r) => s + r.count, 0);
   const ungrouped = Math.max(0, totalOut - groupedSum);
@@ -35,6 +36,7 @@ const ReelChartDimensionSection = memo(function ReelChartDimensionSection({
     <section className="reel-chart-dimension-section">
       <div className="reel-chart-dimension-head">
         <h3 className="reel-chart-report-heading">{title}</h3>
+        {description ? <p className="reel-chart-dimension-desc mb-0">{description}</p> : null}
         {ungrouped > 0 ? (
           <p className="reel-chart-dimension-warn mb-0">
             {ungrouped} check-out{ungrouped !== 1 ? 's' : ''} in this period had no{' '}
@@ -100,6 +102,6 @@ const ReelChartDimensionSection = memo(function ReelChartDimensionSection({
       </div>
     </section>
   );
-});
+}));
 
 export default ReelChartDimensionSection;

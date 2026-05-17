@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Shield } from 'lucide-react';
-import { createUser, fetchUsers, updateUserAccess } from '../../api/reelsApi';
+import { createUser, fetchUsers, updateUserAccess, updateUserPassword } from '../../api/reelsApi';
 import { formatAccessSummary, defaultAccess } from '../../utils/userAccessUtils';
 import { showError, showSuccess } from '../../utils/toastUtils';
 import UserAccessModal from './UserAccessModal';
@@ -61,6 +61,19 @@ const UsersManagement = ({ users, setUsers }) => {
 
   const togglePasswordVisible = (userId) => {
     setVisiblePasswords((prev) => ({ ...prev, [userId]: !prev[userId] }));
+  };
+
+  const handleResetPassword = async (user) => {
+    const password = window.prompt(`Set password for "${user.username}":`);
+    if (!password || !password.trim()) return;
+    try {
+      await updateUserPassword(user.id, password.trim());
+      showSuccess('Password updated');
+      setVisiblePasswords((prev) => ({ ...prev, [user.id]: true }));
+      await refreshUsers();
+    } catch (error) {
+      showError(error.message || 'Failed to update password');
+    }
   };
 
   return (
@@ -131,7 +144,11 @@ const UsersManagement = ({ users, setUsers }) => {
                   <td className="fw-semibold">{user.username}</td>
                   <td>
                     <code className="users-password-cell">
-                      {showPwd ? user.plainPassword || '—' : '••••••••'}
+                      {showPwd
+                        ? user.plainPassword || (
+                            <span className="text-muted">Not stored</span>
+                          )
+                        : '••••••••'}
                     </code>
                     <button
                       type="button"
@@ -140,6 +157,15 @@ const UsersManagement = ({ users, setUsers }) => {
                     >
                       {showPwd ? 'Hide' : 'Show'}
                     </button>
+                    {showPwd && !user.plainPassword && (
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0 ms-1 users-show-pwd"
+                        onClick={() => handleResetPassword(user)}
+                      >
+                        Set password
+                      </button>
+                    )}
                   </td>
                   <td className="text-capitalize">{user.role}</td>
                   <td>

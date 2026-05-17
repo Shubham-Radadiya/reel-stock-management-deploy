@@ -320,6 +320,31 @@ const seedInitialData = async () => {
       role: 'user',
       access: legacyUserAccess()
     });
+  } else {
+    if (!defaultUser.plainPassword) {
+      defaultUser.plainPassword = defaultUserPassword;
+    }
+    if (!defaultUser.access) {
+      defaultUser.access = legacyUserAccess();
+    }
+    await defaultUser.save();
+  }
+
+  const usersMissingPlain = await User.find({
+    $or: [
+      { plainPassword: { $exists: false } },
+      { plainPassword: null },
+      { plainPassword: '' }
+    ]
+  });
+  for (const u of usersMissingPlain) {
+    if (u.username === adminUsername) {
+      u.plainPassword = adminPassword;
+      await u.save();
+    } else if (u.username === defaultUsername) {
+      u.plainPassword = defaultUserPassword;
+      await u.save();
+    }
   }
 
   const usersMissingAccess = await User.find({
@@ -491,6 +516,24 @@ app.put('/api/users/:id/access', authenticate, authorizeAdmin, async (req, res) 
     user.access.minimum = false;
   }
 
+  await user.save();
+  res.json(user.toAdminJSON());
+});
+
+app.put('/api/users/:id/password', authenticate, authorizeAdmin, async (req, res) => {
+  const { password } = req.body || {};
+  if (!password || typeof password !== 'string' || !password.trim()) {
+    return res.status(400).json({ message: 'password is required' });
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const nextPassword = password.trim();
+  user.passwordHash = await bcrypt.hash(nextPassword, 10);
+  user.plainPassword = nextPassword;
   await user.save();
   res.json(user.toAdminJSON());
 });

@@ -29,11 +29,7 @@ const arcPath = (startAngle, endAngle) => {
 
 const rowLabel = (row) => row.label || row.value || row.key;
 
-const ReelChartPie = memo(function ReelChartPie({
-  rows,
-  totalOut,
-  ariaLabel = 'Check-outs distribution pie chart'
-}) {
+const ReelChartPie = memo(({ rows, totalOut, ariaLabel = 'Check-outs distribution pie chart' }) => {
   const displayedTotal = useMemo(
     () => rows.reduce((sum, row) => sum + row.count, 0),
     [rows]
@@ -111,6 +107,6 @@ const ReelChartPie = memo(function ReelChartPie({
       </ul>
     </div>
   );
-});
+};
 
 export default ReelChartPie;

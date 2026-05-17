@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, User, Eye, EyeOff } from 'lucide-react';
 import ForgotPassword from '../ForgotPassword/ForgotPassword';
-import LoginAbout from './LoginAbout';
 import './Login.css';
 import { showError } from '../../utils/toastUtils';
 
@@ -33,14 +32,13 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="login-wrapper">
-      <LoginAbout />
       <div className="login-card">
         <div className="text-center mb-4">
           <div className="login-icon-circle">
             <Lock size={32} />
           </div>
           <h2 className="login-title">Welcome</h2>
-          <p className="login-subtitle">PINEXA · Reel Stock Management</p>
+          <p className="login-subtitle">Reels Stock Management System</p>
         </div>
 
         <form onSubmit={handleSubmit}>
