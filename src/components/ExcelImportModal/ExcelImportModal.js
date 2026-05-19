@@ -3,6 +3,8 @@ import { FileSpreadsheet, X, Download, Upload } from 'lucide-react';
 import { displayDate } from '../../utils/dateFormat';
 import {
   downloadReelImportTemplate,
+  importOutDetailsLabel,
+  importStatusLabel,
   parseReelExcelFile
 } from '../../utils/excelReelImport';
 import './ExcelImportModal.css';
@@ -87,8 +89,14 @@ const ExcelImportModal = ({ isOpen, onClose, onImport, isImporting }) => {
         </div>
         <div className="excel-import-body">
           <p className="excel-import-hint">
-            First row must be headers: <strong>Date, SR No, Reel No, Shade, BF, GSM, Size, Weight</strong>.
-            SR No and Reel No are required on each row.
+            First row must be headers:{' '}
+            <strong>
+              Date, SR No, Reel No, Shade, BF, GSM, Size, Weight, Status, Out Details
+            </strong>
+            . SR No and Reel No are required. Status: <strong>TRUE</strong> / <strong>FALSE</strong>{' '}
+            (any capitals: true, TRUE, False, etc.) — TRUE = checked out, FALSE = in stock. Out
+            Details: <strong>AVAILABLE</strong> (any capitals) when FALSE, or checkout date/time when
+            TRUE.
           </p>
           <div className="excel-import-actions-row">
             <button
@@ -143,6 +151,8 @@ const ExcelImportModal = ({ isOpen, onClose, onImport, isImporting }) => {
                     <th>GSM</th>
                     <th>Size</th>
                     <th>Weight</th>
+                    <th>Status</th>
+                    <th>Out Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -156,6 +166,10 @@ const ExcelImportModal = ({ isOpen, onClose, onImport, isImporting }) => {
                       <td>{row.payload.gsm}</td>
                       <td>{row.payload.size}</td>
                       <td>{row.payload.weight}</td>
+                      <td>{importStatusLabel(row.payload.isCheckedOut)}</td>
+                      <td>
+                        {importOutDetailsLabel(row.payload.isCheckedOut, row.payload.outDate)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

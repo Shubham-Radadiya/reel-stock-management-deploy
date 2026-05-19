@@ -807,3 +807,19 @@ select.table-col-filter {
     height: 88px;
   }
 }
+
+.reel-shade-select,
+.reel-option-select {
+  min-width: 4.5rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reel-shade-display {
+  display: inline-block;
+  min-width: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}

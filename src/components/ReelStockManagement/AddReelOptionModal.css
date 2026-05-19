@@ -1,0 +1,87 @@
+.add-reel-option-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1050;
+}
+
+.add-reel-option-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1051;
+  width: min(400px, calc(100vw - 2rem));
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+}
+
+.add-reel-option-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  color: #fff;
+}
+
+.add-reel-option-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.add-reel-option-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.add-reel-option-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.add-reel-option-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.add-reel-option-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.add-reel-option-body label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.add-reel-option-error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
+.add-reel-option-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.reel-option-select-add {
+  font-weight: 600;
+  color: #2563eb;
+}

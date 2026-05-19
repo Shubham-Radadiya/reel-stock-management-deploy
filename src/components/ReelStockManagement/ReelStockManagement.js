@@ -15,8 +15,25 @@ import {
   syncDismissedWithLowRules,
   wasMinStockToastShown
 } from '../../utils/minStockNotificationStorage';
+import {
+  addReelFieldOption,
+  isShadeOptionExcluded,
+  loadReelFieldOptions,
+  normalizeBfValue,
+  normalizeShadeValue
+} from '../../utils/reelFieldOptions';
+import ReelOptionSelect from './ReelOptionSelect';
+import AddReelOptionModal from './AddReelOptionModal';
 
 const FILTER_COLUMN_KEYS = ['date', 'srNo', 'reelNo', 'shade', 'bf', 'gsm', 'size', 'weight', 'status', 'outDetails'];
+
+const mergeOptionWithValue = (options, value, field) => {
+  const normalized =
+    field === 'shade' ? normalizeShadeValue(value) : normalizeBfValue(value);
+  if (!normalized || (field === 'shade' && isShadeOptionExcluded(normalized))) return options;
+  if (options.some((opt) => opt.toLowerCase() === normalized.toLowerCase())) return options;
+  return [...options, normalized];
+};
 
 /** OUT DETAILS filter: AVAILABLE first, then other values (dates, —) sorted. */
 const sortOutDetailsFilterValues = (values) =>
@@ -108,8 +125,50 @@ const ReelStockManagement = ({
     confirmText: 'Confirm',
     cancelText: 'Cancel'
   });
+  const [shadeOptions, setShadeOptions] = useState(() => loadReelFieldOptions('shade'));
+  const [bfOptions, setBfOptions] = useState(() => loadReelFieldOptions('bf'));
+  const [addOptionField, setAddOptionField] = useState(null);
   const tableBodyRef = useRef(null);
   const firstAddInputRef = useRef(null);
+
+  const applyReelFieldValue = (field, value) => {
+    if (isAddingInline) {
+      setNewReelData((prev) => ({ ...prev, [field]: value }));
+    }
+    if (editingReelId && editFormData) {
+      setEditFormData((prev) => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const openAddOptionModal = (field) => {
+    setAddOptionField(field);
+  };
+
+  const handleSaveReelOption = (field, rawValue) => {
+    const current = field === 'shade' ? shadeOptions : bfOptions;
+    const { options, value, error } = addReelFieldOption(field, rawValue, current);
+
+    if (field === 'shade') {
+      setShadeOptions(options);
+    } else {
+      setBfOptions(options);
+    }
+
+    if (value) {
+      applyReelFieldValue(field, value);
+    }
+
+    if (error === 'This option already exists') {
+      showWarning('That option already exists — it has been selected.');
+      return { value, error: null };
+    }
+    if (error) {
+      return { value, error };
+    }
+
+    showSuccess(`${field === 'shade' ? 'Shade' : 'BF'} "${value}" added.`);
+    return { value, error: null };
+  };
 
   const buildBlankReel = () => ({
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -195,9 +254,17 @@ const ReelStockManagement = ({
     }
 
     try {
-      await onAddReel(newReel);
+      await onAddReel({
+        ...newReel,
+        shade: normalizeShadeValue(newReel.shade),
+        bf: normalizeBfValue(newReel.bf)
+      });
       if (isBulkAddMode) {
-        setNewReelData(buildBlankReel());
+        setNewReelData((prev) => ({
+          ...buildBlankReel(),
+          shade: prev.shade,
+          bf: prev.bf
+        }));
       } else {
         setIsAddingInline(false);
         setNewReelData(buildBlankReel());
@@ -234,7 +301,11 @@ const ReelStockManagement = ({
     }
 
     try {
-      await onUpdateReel(updatedReel);
+      await onUpdateReel({
+        ...updatedReel,
+        shade: normalizeShadeValue(updatedReel.shade),
+        bf: normalizeBfValue(updatedReel.bf)
+      });
       setEditingReelId(null);
       setEditFormData(null);
       showSuccess(`Reel ${updatedReel.reelNo} updated successfully!`);
@@ -813,21 +884,25 @@ const ReelStockManagement = ({
                       />
                     </td>
                     <td style={{ width: '80px' }}>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
+                      <ReelOptionSelect
+                        options={mergeOptionWithValue(shadeOptions, newReelData.shade, 'shade')}
                         value={newReelData.shade}
-                        onChange={(e) => setNewReelData(prev => ({ ...prev, shade: e.target.value }))}
-                        placeholder="Shade"
+                        onChange={(shade) =>
+                          setNewReelData((prev) => ({ ...prev, shade: normalizeShadeValue(shade) }))
+                        }
+                        onAddClick={() => openAddOptionModal('shade')}
+                        ariaLabel="Shade"
                       />
                     </td>
                     <td style={{ width: '80px' }}>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
+                      <ReelOptionSelect
+                        options={mergeOptionWithValue(bfOptions, newReelData.bf, 'bf')}
                         value={newReelData.bf}
-                        onChange={(e) => setNewReelData(prev => ({ ...prev, bf: e.target.value }))}
-                        placeholder="BF"
+                        onChange={(bf) =>
+                          setNewReelData((prev) => ({ ...prev, bf: normalizeBfValue(bf) }))
+                        }
+                        onAddClick={() => openAddOptionModal('bf')}
+                        ariaLabel="BF"
                       />
                     </td>
                     <td style={{ width: '80px' }}>
@@ -938,23 +1013,29 @@ const ReelStockManagement = ({
                     </td>
                     <td style={{ width: '80px' }}>
                       {editingReelId === reel.id ? (
-                        <input
-                          type="text"
-                          className="form-control form-control-sm"
+                        <ReelOptionSelect
+                          options={mergeOptionWithValue(shadeOptions, editFormData.shade, 'shade')}
                           value={editFormData.shade}
-                          onChange={(e) => setEditFormData(prev => ({ ...prev, shade: e.target.value }))}
+                          onChange={(shade) =>
+                            setEditFormData((prev) => ({ ...prev, shade: normalizeShadeValue(shade) }))
+                          }
+                          onAddClick={() => openAddOptionModal('shade')}
+                          ariaLabel="Shade"
                         />
                       ) : (
-                        reel.shade
+                        <span className="reel-shade-display">{reel.shade || '—'}</span>
                       )}
                     </td>
                     <td style={{ width: '80px' }}>
                       {editingReelId === reel.id ? (
-                        <input
-                          type="text"
-                          className="form-control form-control-sm"
+                        <ReelOptionSelect
+                          options={mergeOptionWithValue(bfOptions, editFormData.bf, 'bf')}
                           value={editFormData.bf}
-                          onChange={(e) => setEditFormData(prev => ({ ...prev, bf: e.target.value }))}
+                          onChange={(bf) =>
+                            setEditFormData((prev) => ({ ...prev, bf: normalizeBfValue(bf) }))
+                          }
+                          onAddClick={() => openAddOptionModal('bf')}
+                          ariaLabel="BF"
                         />
                       ) : (
                         reel.bf
@@ -1109,6 +1190,13 @@ const ReelStockManagement = ({
         onClose={() => setShowExcelImport(false)}
         onImport={handleExcelImport}
         isImporting={isExcelImporting}
+      />
+
+      <AddReelOptionModal
+        isOpen={Boolean(addOptionField)}
+        field={addOptionField}
+        onClose={() => setAddOptionField(null)}
+        onSave={handleSaveReelOption}
       />
 
       {/* Confirmation Modal */}

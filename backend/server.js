@@ -638,6 +638,7 @@ app.post('/api/reels/bulk', authenticate, async (req, res) => {
       continue;
     }
     try {
+      const isCheckedOut = Boolean(payload.isCheckedOut);
       const reel = await Reel.create({
         date: payload.date || '',
         srNo,
@@ -647,8 +648,8 @@ app.post('/api/reels/bulk', authenticate, async (req, res) => {
         gsm: payload.gsm || '',
         size: payload.size || '',
         weight: payload.weight != null ? String(payload.weight) : '',
-        isCheckedOut: false,
-        outDate: ''
+        isCheckedOut,
+        outDate: isCheckedOut ? String(payload.outDate || '').trim() : ''
       });
       created.push(reel.toJSON());
     } catch (err) {
