@@ -27,6 +27,22 @@ import AddReelOptionModal from './AddReelOptionModal';
 
 const FILTER_COLUMN_KEYS = ['date', 'srNo', 'reelNo', 'shade', 'bf', 'gsm', 'size', 'weight', 'status', 'outDetails'];
 
+const REEL_TABLE_COLGROUP = (
+  <colgroup>
+    <col className="reel-col-date" />
+    <col className="reel-col-srno" />
+    <col className="reel-col-reelno" />
+    <col className="reel-col-shade" />
+    <col className="reel-col-bf" />
+    <col className="reel-col-gsm" />
+    <col className="reel-col-size" />
+    <col className="reel-col-weight" />
+    <col className="reel-col-status" />
+    <col className="reel-col-out" />
+    <col className="reel-col-actions" />
+  </colgroup>
+);
+
 const mergeOptionWithValue = (options, value, field) => {
   const normalized =
     field === 'shade' ? normalizeShadeValue(value) : normalizeBfValue(value);
@@ -669,11 +685,12 @@ const ReelStockManagement = ({
       <div className="main-card shadow-sm border-0">
         {/* Fixed Table Header with Scrollable Body */}
         <div className="table-wrapper">
-          <div className="table-header">
-            <table className="table table-align-middle mb-0">
-              <thead className="table-light-header">
+          <div className="table-scroll" ref={tableBodyRef}>
+            <table className="table table-hover table-align-middle reel-stock-table mb-0">
+              {REEL_TABLE_COLGROUP}
+              <thead className="table-light-header reel-stock-table-head">
                 <tr>
-                  <th className="ps-4 table-th-filter" style={{ width: '100px' }}>
+                  <th className="table-th-filter reel-col-first">
                     <div className="table-header-filter-inner">
                       <span>DATE</span>
                       <button
@@ -689,7 +706,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="table-th-filter" style={{ width: '100px' }}>
+                  <th className="table-th-filter">
                     <div className="table-header-filter-inner">
                       <span>SR NO.</span>
                       <button
@@ -705,7 +722,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="table-th-filter" style={{ width: '120px' }}>
+                  <th className="table-th-filter">
                     <div className="table-header-filter-inner">
                       <span>REEL NO.</span>
                       <button
@@ -721,7 +738,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="table-th-filter" style={{ width: '80px' }}>
+                  <th className="table-th-filter">
                     <div className="table-header-filter-inner">
                       <span>SHADE</span>
                       <button
@@ -737,7 +754,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="table-th-filter" style={{ width: '80px' }}>
+                  <th className="table-th-filter">
                     <div className="table-header-filter-inner">
                       <span>BF</span>
                       <button
@@ -753,7 +770,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="table-th-filter" style={{ width: '80px' }}>
+                  <th className="table-th-filter">
                     <div className="table-header-filter-inner">
                       <span>GSM</span>
                       <button
@@ -769,7 +786,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="table-th-filter" style={{ width: '80px' }}>
+                  <th className="table-th-filter">
                     <div className="table-header-filter-inner">
                       <span>SIZE</span>
                       <button
@@ -785,7 +802,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="table-th-filter" style={{ width: '100px' }}>
+                  <th className="table-th-filter">
                     <div className="table-header-filter-inner">
                       <span>WEIGHT</span>
                       <button
@@ -801,7 +818,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="text-center table-th-filter" style={{ width: '100px' }}>
+                  <th className="text-center table-th-filter">
                     <div className="table-header-filter-inner table-header-filter-inner-center">
                       <span>STATUS</span>
                       <button
@@ -817,7 +834,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="text-center table-th-filter" style={{ width: '140px' }}>
+                  <th className="text-center table-th-filter">
                     <div className="table-header-filter-inner table-header-filter-inner-center">
                       <span>OUT DETAILS</span>
                       <button
@@ -833,7 +850,7 @@ const ReelStockManagement = ({
                       </button>
                     </div>
                   </th>
-                  <th className="text-center pe-4" style={{ width: '100px' }}>
+                  <th className="text-center reel-col-last">
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary table-filter-clear-btn"
@@ -847,16 +864,11 @@ const ReelStockManagement = ({
                   </th>
                 </tr>
               </thead>
-            </table>
-          </div>
-          
-          <div className="table-body" ref={tableBodyRef}>
-            <table className="table table-hover align-middle mb-0">
               <tbody>
               <>
                 {isAddingInline && (
                   <tr className="table-warning">
-                    <td className="ps-4" style={{ width: '100px' }}>
+                    <td className="reel-col-first">
                       <input
                         type="date"
                         className="form-control form-control-sm"
@@ -864,7 +876,7 @@ const ReelStockManagement = ({
                         onChange={(e) => setNewReelData(prev => ({ ...prev, date: e.target.value }))}
                       />
                     </td>
-                    <td style={{ width: '100px' }}>
+                    <td>
                       <input
                         ref={firstAddInputRef}
                         type="text"
@@ -874,7 +886,7 @@ const ReelStockManagement = ({
                         placeholder="SR No"
                       />
                     </td>
-                    <td style={{ width: '120px' }}>
+                    <td>
                       <input
                         type="text"
                         className="form-control form-control-sm"
@@ -883,7 +895,7 @@ const ReelStockManagement = ({
                         placeholder="Reel No"
                       />
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       <ReelOptionSelect
                         options={mergeOptionWithValue(shadeOptions, newReelData.shade, 'shade')}
                         value={newReelData.shade}
@@ -894,7 +906,7 @@ const ReelStockManagement = ({
                         ariaLabel="Shade"
                       />
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       <ReelOptionSelect
                         options={mergeOptionWithValue(bfOptions, newReelData.bf, 'bf')}
                         value={newReelData.bf}
@@ -905,7 +917,7 @@ const ReelStockManagement = ({
                         ariaLabel="BF"
                       />
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       <input
                         type="text"
                         className="form-control form-control-sm"
@@ -914,7 +926,7 @@ const ReelStockManagement = ({
                         placeholder="GSM"
                       />
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       <input
                         type="text"
                         className="form-control form-control-sm"
@@ -923,7 +935,7 @@ const ReelStockManagement = ({
                         placeholder="Size"
                       />
                     </td>
-                    <td style={{ width: '100px' }}>
+                    <td>
                       <input
                         type="number"
                         min="0"
@@ -933,13 +945,13 @@ const ReelStockManagement = ({
                         placeholder="Weight"
                       />
                     </td>
-                    <td className="text-center" style={{ width: '100px' }}>
+                    <td className="text-center">
                       <span className="badge bg-success-subtle text-success">IN</span>
                     </td>
-                    <td className="text-center" style={{ width: '140px' }}>
+                    <td className="text-center">
                       <span className="badge-in">AVAILABLE</span>
                     </td>
-                    <td className="text-center pe-4" style={{ width: '100px' }}>
+                    <td className="text-center reel-col-last">
                       <div className="action-buttons">
                         <button
                           className="action-btn edit-btn me-2"
@@ -975,7 +987,7 @@ const ReelStockManagement = ({
                 ) : (
                   tableReels.map((reel) => (
                   <tr key={reel.id} className={reel.isCheckedOut ? 'table-row-out' : ''}>
-                    <td className="ps-4 fw-medium" style={{ width: '100px' }}>
+                    <td className="reel-col-first fw-medium">
                       {editingReelId === reel.id ? (
                         <input
                           type="date"
@@ -987,7 +999,7 @@ const ReelStockManagement = ({
                         displayDate(reel.date)
                       )}
                     </td>
-                    <td style={{ width: '100px' }}>
+                    <td>
                       {editingReelId === reel.id ? (
                         <input
                           type="text"
@@ -999,7 +1011,7 @@ const ReelStockManagement = ({
                         reel.srNo
                       )}
                     </td>
-                    <td style={{ width: '120px' }}>
+                    <td>
                       {editingReelId === reel.id ? (
                         <input
                           type="text"
@@ -1011,7 +1023,7 @@ const ReelStockManagement = ({
                         <span className="fw-bold text-dark">{reel.reelNo}</span>
                       )}
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       {editingReelId === reel.id ? (
                         <ReelOptionSelect
                           options={mergeOptionWithValue(shadeOptions, editFormData.shade, 'shade')}
@@ -1026,7 +1038,7 @@ const ReelStockManagement = ({
                         <span className="reel-shade-display">{reel.shade || '—'}</span>
                       )}
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       {editingReelId === reel.id ? (
                         <ReelOptionSelect
                           options={mergeOptionWithValue(bfOptions, editFormData.bf, 'bf')}
@@ -1041,7 +1053,7 @@ const ReelStockManagement = ({
                         reel.bf
                       )}
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       {editingReelId === reel.id ? (
                         <input
                           type="text"
@@ -1053,7 +1065,7 @@ const ReelStockManagement = ({
                         reel.gsm
                       )}
                     </td>
-                    <td style={{ width: '80px' }}>
+                    <td>
                       {editingReelId === reel.id ? (
                         <input
                           type="text"
@@ -1065,7 +1077,7 @@ const ReelStockManagement = ({
                         reel.size
                       )}
                     </td>
-                    <td style={{ width: '100px' }}>
+                    <td>
                       {editingReelId === reel.id ? (
                         <input
                           type="number"
@@ -1078,7 +1090,7 @@ const ReelStockManagement = ({
                         <span className="fw-bold text-primary">{reel.weight} <small>kg</small></span>
                       )}
                     </td>
-                    <td className="text-center" style={{ width: '100px' }}>
+                    <td className="text-center">
                       <div className="form-check d-flex justify-content-center">
                         <input 
                           className="form-check-input cursor-pointer shadow-none" 
@@ -1090,7 +1102,7 @@ const ReelStockManagement = ({
                         />
                       </div>
                     </td>
-                    <td className="text-center" style={{ width: '140px' }}>
+                    <td className="text-center">
                       {reel.isCheckedOut ? (
                         <div className="badge-out">
                           <Clock size={12} className="me-1" /> {reel.outDate}
@@ -1099,7 +1111,7 @@ const ReelStockManagement = ({
                         <span className="badge-in">AVAILABLE</span>
                       )}
                     </td>
-                    <td className="text-center pe-4" style={{ width: '100px' }}>
+                    <td className="text-center reel-col-last">
                       <div className="action-buttons">
                         {editingReelId === reel.id ? (
                           <>

@@ -359,78 +359,99 @@ button.stat-card-inline.stat-card-filter:focus-visible {
   overflow: hidden;
 }
 
-.table-header {
-  flex-shrink: 0;
-  overflow: visible;
-  border-bottom: 2px solid #f1f5f9;
-  position: relative;
-  z-index: 25;
+.table-scroll {
+  flex: 1;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
-.table-header table {
+.reel-stock-table {
   width: 100%;
   table-layout: fixed;
+  border-collapse: collapse;
+  border-spacing: 0;
 }
 
-.table-header th {
+.reel-stock-table col.reel-col-date {
+  width: 9.26%;
+}
+
+.reel-stock-table col.reel-col-srno {
+  width: 9.26%;
+}
+
+.reel-stock-table col.reel-col-reelno {
+  width: 11.11%;
+}
+
+.reel-stock-table col.reel-col-shade,
+.reel-stock-table col.reel-col-bf,
+.reel-stock-table col.reel-col-gsm,
+.reel-stock-table col.reel-col-size {
+  width: 7.41%;
+}
+
+.reel-stock-table col.reel-col-weight,
+.reel-stock-table col.reel-col-status,
+.reel-stock-table col.reel-col-actions {
+  width: 9.26%;
+}
+
+.reel-stock-table col.reel-col-out {
+  width: 12.96%;
+}
+
+.reel-stock-table th,
+.reel-stock-table td {
+  box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  padding: 0.45rem 0.4rem;
+  vertical-align: middle;
+}
+
+.reel-stock-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 12;
   background-color: #f8fafc;
   color: #64748b;
   font-weight: 700;
   font-size: 0.75rem;
   letter-spacing: 0.05em;
-  padding: 1rem 0.5rem;
-  border-bottom: none;
+  box-shadow: inset 0 -1px 0 #e2e8f0;
 }
 
-.table-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+.reel-stock-table .reel-col-first {
+  padding-left: 0.75rem;
 }
 
-.table-body table {
-  width: 100%;
-  table-layout: fixed;
+.reel-stock-table .reel-col-last {
+  padding-right: 0.75rem;
 }
 
-.table-body td {
-  padding: 0.39rem 0.5rem;
-  vertical-align: middle;
-}
-
-/* Custom scrollbar for table body */
-.table-body::-webkit-scrollbar {
+/* Custom scrollbar for table scroll area */
+.table-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.table-body::-webkit-scrollbar-track {
+.table-scroll::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 10px;
 }
 
-.table-body::-webkit-scrollbar-thumb {
+.table-scroll::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 10px;
 }
 
-.table-body::-webkit-scrollbar-thumb:hover {
+.table-scroll::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
 /* --- Table Styles --- */
-.table-light-header th {
-  background-color: #f8fafc;
-  color: #64748b;
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  padding: 0.4rem 0.5rem;
-  vertical-align: middle;
-}
-
 .table-th-filter {
-  padding: 0.35rem 0.4rem !important;
+  padding: 0.4rem 0.35rem !important;
 }
 
 .table-header-filter-inner {
@@ -536,8 +557,12 @@ select.table-col-filter {
   color: white !important;
 }
 
-.table-hover tbody tr:hover {
+.reel-stock-table.table-hover tbody tr:hover td {
   background-color: #f1f5f9;
+}
+
+.reel-stock-table.table-hover tbody tr.table-row-out:hover td {
+  background-color: #ef4444 !important;
 }
 
 /* --- Badges & Pills --- */
