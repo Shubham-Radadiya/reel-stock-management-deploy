@@ -48,6 +48,7 @@ import {
 } from '../../utils/matrixExportUtils';
 import { showError, showSuccess } from '../../utils/toastUtils';
 import { getAllowedReportTabs } from '../../utils/userAccessUtils';
+import { compareMatrixCombinations } from '../../utils/matrixSortUtils';
 
 const MATRIX_TAB = { id: 'matrix', label: 'Matrix', icon: LayoutGrid };
 const ANALYTICS_TAB = { id: 'analytics', label: 'Analytics', icon: TrendingUp };
@@ -143,11 +144,7 @@ const Report = ({ reels, stockMinimums = [], setStockMinimums, userRole, userAcc
         combinations.push({ shade: r.shade, bf: r.bf, gsm: r.gsm, key });
       }
     });
-    combinations.sort((a, b) => {
-      if (a.shade !== b.shade) return a.shade.localeCompare(b.shade);
-      if (a.bf !== b.bf) return parseFloat(a.bf) - parseFloat(b.bf);
-      return parseFloat(a.gsm) - parseFloat(b.gsm);
-    });
+    combinations.sort(compareMatrixCombinations);
     return { sizes, combinations };
   }, [availableReels]);
 
@@ -183,15 +180,16 @@ const Report = ({ reels, stockMinimums = [], setStockMinimums, userRole, userAcc
   }, [matrix.sizes, matrixSizeFilter, isAdmin]);
 
   const matrixDisplayCombinations = useMemo(() => {
-    if (!isAdmin) return visibleCombinations;
     let combos = visibleCombinations;
-    if (matrixGsmFilter.trim()) {
-      combos = combos.filter((c) => matchesMatrixNumberFilter(c.gsm, matrixGsmFilter));
+    if (isAdmin) {
+      if (matrixGsmFilter.trim()) {
+        combos = combos.filter((c) => matchesMatrixNumberFilter(c.gsm, matrixGsmFilter));
+      }
+      if (matrixBfFilter.trim()) {
+        combos = combos.filter((c) => matchesMatrixNumberFilter(c.bf, matrixBfFilter));
+      }
     }
-    if (matrixBfFilter.trim()) {
-      combos = combos.filter((c) => matchesMatrixNumberFilter(c.bf, matrixBfFilter));
-    }
-    return combos;
+    return [...combos].sort(compareMatrixCombinations);
   }, [visibleCombinations, matrixGsmFilter, matrixBfFilter, isAdmin]);
 
   const clearMatrixFilters = () => {
@@ -604,19 +602,33 @@ const Report = ({ reels, stockMinimums = [], setStockMinimums, userRole, userAcc
                   <div className="matrix-table-inner">
                   <table className="matrix-table">
                     <thead>
-                      <tr className="matrix-header-main">
-                        <th className="size-col header-corner">SIZE ↓ / BF|GSM →</th>
+                      <tr className="matrix-header-row matrix-header-shade">
+                        <th rowSpan={3} className="size-col header-corner">
+                          SIZE ↓
+                          <span className="matrix-corner-sub">SHADE / BF / GSM →</span>
+                        </th>
                         {matrixDisplayCombinations.map((c) => (
-                          <th key={c.key} className="combo-col">
-                            <div className="combo-info">
-                              <span className="combo-shade">{c.shade}</span>
-                              <span className="combo-specs">
-                                {c.bf} | {c.gsm}
-                              </span>
-                            </div>
+                          <th key={`${c.key}-shade`} className="combo-col matrix-header-cell">
+                            {c.shade}
                           </th>
                         ))}
-                        <th className="total-col header-total">TOTAL</th>
+                        <th rowSpan={3} className="total-col header-total">
+                          TOTAL
+                        </th>
+                      </tr>
+                      <tr className="matrix-header-row matrix-header-bf">
+                        {matrixDisplayCombinations.map((c) => (
+                          <th key={`${c.key}-bf`} className="combo-col matrix-header-cell">
+                            {c.bf}
+                          </th>
+                        ))}
+                      </tr>
+                      <tr className="matrix-header-row matrix-header-gsm">
+                        {matrixDisplayCombinations.map((c) => (
+                          <th key={`${c.key}-gsm`} className="combo-col matrix-header-cell">
+                            {c.gsm}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>

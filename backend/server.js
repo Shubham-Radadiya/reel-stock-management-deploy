@@ -112,13 +112,15 @@ const fullAccess = () => ({
   minimum: true
 });
 
-const legacyUserAccess = () => ({
+const defaultUserAccess = () => ({
   reports: true,
   matrix: true,
-  analytics: true,
+  analytics: false,
   reelchart: false,
   minimum: false
 });
+
+const legacyUserAccess = () => defaultUserAccess();
 
 const resolveUserAccess = (user) => {
   if (user?.role === 'admin') return fullAccess();
@@ -471,13 +473,15 @@ app.post('/api/users', authenticate, authorizeAdmin, async (req, res) => {
     role: isAdmin ? 'admin' : 'user',
     access: isAdmin
       ? fullAccess()
-      : {
-          reports: Boolean(access?.reports),
-          matrix: Boolean(access?.matrix),
-          analytics: Boolean(access?.analytics),
-          reelchart: Boolean(access?.reelchart),
-          minimum: Boolean(access?.minimum)
-        }
+      : access && typeof access === 'object'
+        ? {
+            reports: Boolean(access.reports),
+            matrix: Boolean(access.matrix),
+            analytics: Boolean(access.analytics),
+            reelchart: Boolean(access.reelchart),
+            minimum: Boolean(access.minimum)
+          }
+        : defaultUserAccess()
   });
 
   res.status(201).json(newUser.toAdminJSON());

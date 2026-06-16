@@ -24,6 +24,7 @@ import {
 } from '../../utils/reelFieldOptions';
 import ReelOptionSelect from './ReelOptionSelect';
 import AddReelOptionModal from './AddReelOptionModal';
+import { getNextSrNo, parseSrNoNumber } from '../../utils/reelSrNoUtils';
 
 const FILTER_COLUMN_KEYS = ['date', 'srNo', 'reelNo', 'shade', 'bf', 'gsm', 'size', 'weight', 'status', 'outDetails'];
 
@@ -186,9 +187,9 @@ const ReelStockManagement = ({
     return { value, error: null };
   };
 
-  const buildBlankReel = () => ({
+  const buildBlankReel = (srNo = '') => ({
     date: format(new Date(), 'yyyy-MM-dd'),
-    srNo: '',
+    srNo: srNo ? String(srNo) : getNextSrNo(reels),
     reelNo: '',
     shade: '',
     bf: '',
@@ -265,19 +266,22 @@ const ReelStockManagement = ({
   };
 
   const handleAddReel = async (newReel) => {
-    if (!newReel.srNo.trim() || !newReel.reelNo.trim()) {
+    if (!newReel.reelNo.trim()) {
       return;
     }
+
+    const srNo = newReel.srNo.trim() || getNextSrNo(reels);
 
     try {
       await onAddReel({
         ...newReel,
+        srNo,
         shade: normalizeShadeValue(newReel.shade),
         bf: normalizeBfValue(newReel.bf)
       });
       if (isBulkAddMode) {
         setNewReelData((prev) => ({
-          ...buildBlankReel(),
+          ...buildBlankReel(String(parseSrNoNumber(srNo) + 1)),
           shade: prev.shade,
           bf: prev.bf
         }));
@@ -294,6 +298,7 @@ const ReelStockManagement = ({
   const startInlineAdd = () => {
     setEditingReelId(null);
     setEditFormData(null);
+    setNewReelData(buildBlankReel());
     setIsAddingInline(true);
   };
 
@@ -877,17 +882,13 @@ const ReelStockManagement = ({
                       />
                     </td>
                     <td>
-                      <input
-                        ref={firstAddInputRef}
-                        type="text"
-                        className="form-control form-control-sm"
-                        value={newReelData.srNo}
-                        onChange={(e) => setNewReelData(prev => ({ ...prev, srNo: e.target.value }))}
-                        placeholder="SR No"
-                      />
+                      <span className="reel-srno-auto" title="Auto-generated SR No">
+                        {newReelData.srNo}
+                      </span>
                     </td>
                     <td>
                       <input
+                        ref={firstAddInputRef}
                         type="text"
                         className="form-control form-control-sm"
                         value={newReelData.reelNo}

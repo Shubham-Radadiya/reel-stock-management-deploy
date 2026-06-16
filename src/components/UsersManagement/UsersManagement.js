@@ -121,7 +121,7 @@ const UsersManagement = ({ users, setUsers }) => {
         </div>
       </form>
       <p className="users-create-note text-muted small mb-3">
-        New users start with Reel Stock Management only. Use the access icon to grant report sections.
+        New users get Reel Stock Management and Matrix report only. Use the access icon to change report sections.
       </p>
 
       <div className="table-responsive">

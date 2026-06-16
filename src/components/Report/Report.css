@@ -920,6 +920,7 @@
 
 /* Matrix Table */
 .matrix-table {
+  --matrix-head-row-h: 30px;
   border-collapse: separate;
   border-spacing: 0;
   width: max-content;
@@ -938,12 +939,28 @@
 
 /* ===== STICKY POSITIONING ===== */
 
-/* 1. STICKY HEADER (Top) */
-.matrix-table thead tr th {
+/* 1. STICKY HEADER ROWS (Shade / BF / GSM) */
+.matrix-table thead .matrix-header-shade th {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 24;
+  background: linear-gradient(135deg, #1e293b, #334155);
+}
+
+.matrix-table thead .matrix-header-bf th {
+  position: -webkit-sticky;
+  position: sticky;
+  top: var(--matrix-head-row-h);
+  z-index: 23;
+  background: linear-gradient(135deg, #1e293b, #334155);
+}
+
+.matrix-table thead .matrix-header-gsm th {
+  position: -webkit-sticky;
+  position: sticky;
+  top: calc(var(--matrix-head-row-h) * 2);
+  z-index: 22;
   background: linear-gradient(135deg, #1e293b, #334155);
 }
 
@@ -979,11 +996,23 @@
   position: sticky;
   top: 0;
   left: 0;
-  z-index: 30;
+  z-index: 32;
   background: linear-gradient(135deg, #1e293b, #334155);
   min-width: 120px;
   width: 120px;
   font-size: 0.7rem;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.matrix-corner-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+  text-transform: uppercase;
 }
 
 .matrix-table td.footer-corner {
@@ -996,13 +1025,14 @@
   font-weight: 800;
 }
 
-/* Top-Right header cell (TOTAL): sticky top only */
+/* Top-Right header cell (TOTAL): sticky top, spans 3 rows */
 .matrix-table th.header-total {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 31;
   background: linear-gradient(135deg, #1e293b, #334155);
+  vertical-align: middle;
 }
 
 /* Bottom-right grand total: sticky bottom only */
@@ -1030,48 +1060,23 @@
   width: 80px;
 }
 
-/* Header Styling */
-.matrix-header-main th {
-  padding: 4px;
-  font-weight: 700;
-  color: white;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.combo-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.combo-shade {
-  font-size: 0.85rem;
+/* Header Styling — three stacked rows per column */
+.matrix-table thead .matrix-header-row th {
+  height: var(--matrix-head-row-h);
+  min-height: var(--matrix-head-row-h);
+  max-height: var(--matrix-head-row-h);
+  padding: 4px 6px;
   font-weight: 800;
   color: #fff;
-  line-height: 1;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
-/* BF | GSM — high-contrast chip so it reads clearly under G / N */
-.combo-specs {
-  display: inline-block;
-  max-width: 100%;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-  color: #0f172a;
-  text-transform: none;
-  white-space: nowrap;
-  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+.matrix-table thead .matrix-header-cell {
+  text-transform: uppercase;
 }
 
 /* Body Cells */
@@ -1210,19 +1215,13 @@
     width: 52px;
   }
 
-  .matrix-header-main th {
-    padding: 3px 2px;
+  .matrix-table {
+    --matrix-head-row-h: 26px;
+  }
+
+  .matrix-table thead .matrix-header-row th {
     font-size: 0.68rem;
-  }
-
-  .combo-shade {
-    font-size: 0.72rem;
-  }
-
-  .combo-specs {
-    font-size: 0.62rem;
-    padding: 2px 5px;
-    border-radius: 4px;
+    padding: 3px 2px;
   }
 
   .size-cell,
@@ -1257,25 +1256,17 @@
     width: 44px;
   }
 
-  .matrix-header-main th {
+  .matrix-table {
+    --matrix-head-row-h: 22px;
+  }
+
+  .matrix-table thead .matrix-header-row th {
     padding: 2px 1px;
     font-size: 0.58rem;
   }
 
-  .combo-info {
-    gap: 3px;
-  }
-
-  .combo-shade {
-    font-size: 0.62rem;
-    line-height: 1;
-  }
-
-  .combo-specs {
-    font-size: 0.55rem;
-    line-height: 1.15;
-    padding: 2px 4px;
-    border-radius: 4px;
+  .matrix-corner-sub {
+    font-size: 0.5rem;
   }
 
   .size-cell,

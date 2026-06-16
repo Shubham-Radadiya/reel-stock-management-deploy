@@ -16,19 +16,20 @@ export const fullAccess = () => ({
   minimum: true
 });
 
+/** New users: Reel Stock + Matrix report only. */
 export const defaultAccess = () => ({
-  reports: false,
-  matrix: false,
+  reports: true,
+  matrix: true,
   analytics: false,
   reelchart: false,
   minimum: false
 });
 
-/** Existing users created before access control: Matrix + Analytics only. */
+/** Users without access object (legacy): Matrix report only. */
 export const legacyUserAccess = () => ({
   reports: true,
   matrix: true,
-  analytics: true,
+  analytics: false,
   reelchart: false,
   minimum: false
 });
