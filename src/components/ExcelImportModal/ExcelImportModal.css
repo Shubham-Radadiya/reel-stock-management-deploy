@@ -95,6 +95,14 @@
   margin-bottom: 0.75rem;
 }
 
+.excel-import-warning {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
 .excel-import-summary {
   font-size: 0.875rem;
   margin-bottom: 0.75rem;

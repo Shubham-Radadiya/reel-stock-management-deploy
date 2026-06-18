@@ -93,10 +93,10 @@ const ExcelImportModal = ({ isOpen, onClose, onImport, isImporting }) => {
             <strong>
               Date, SR No, Reel No, Shade, BF, GSM, Size, Weight, Status, Out Details
             </strong>
-            . SR No and Reel No are required. Status: <strong>TRUE</strong> / <strong>FALSE</strong>{' '}
-            (any capitals: true, TRUE, False, etc.) — TRUE = checked out, FALSE = in stock. Out
-            Details: <strong>AVAILABLE</strong> (any capitals) when FALSE, or checkout date/time when
-            TRUE.
+            . SR No and Reel No are required. Use the <strong>Download template</strong> file,
+            paste your data, <strong>Save As</strong> a new .xlsx, then import that file (not a
+            BillLines / invoice export). Status: <strong>TRUE</strong> / <strong>FALSE</strong> —
+            TRUE = checked out, FALSE = in stock.
           </p>
           <div className="excel-import-actions-row">
             <button
@@ -130,12 +130,21 @@ const ExcelImportModal = ({ isOpen, onClose, onImport, isImporting }) => {
           {parseResult ? (
             <div className="excel-import-summary">
               <span className="text-success fw-semibold">{parseResult.valid.length} ready to import</span>
+              {parseResult.totalRowsScanned > 0 ? (
+                <span className="text-muted ms-2">
+                  ({parseResult.totalRowsScanned.toLocaleString()} data row(s) scanned
+                  {parseResult.sheetName ? ` on "${parseResult.sheetName}"` : ''})
+                </span>
+              ) : null}
               {parseResult.invalid.length > 0 ? (
                 <span className="text-danger ms-2">
-                  {parseResult.invalid.length} row(s) skipped (missing SR No / Reel No)
+                  {parseResult.invalid.length.toLocaleString()} row(s) skipped (missing SR No / Reel No)
                 </span>
               ) : null}
             </div>
+          ) : null}
+          {parseResult?.warning ? (
+            <p className="excel-import-warning small mb-0 mt-2">{parseResult.warning}</p>
           ) : null}
           {previewRows.length > 0 ? (
             <div className="excel-import-preview-wrap">

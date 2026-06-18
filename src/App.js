@@ -214,11 +214,40 @@ function App() {
               setReels((prev) => [...prev, created]);
             }}
             onBulkAddReels={async (newReels) => {
-              const result = await createReelsBulk(newReels);
-              if (result.created?.length) {
-                setReels((prev) => [...prev, ...result.created]);
+              const BATCH = 500;
+              const allCreated = [];
+              const allErrors = [];
+              let imported = 0;
+              let failed = 0;
+
+              for (let i = 0; i < newReels.length; i += BATCH) {
+                const chunk = newReels.slice(i, i + BATCH);
+                const result = await createReelsBulk(chunk);
+                const chunkImported = result.imported ?? result.created?.length ?? 0;
+                const chunkFailed = result.failed ?? result.errors?.length ?? 0;
+                imported += chunkImported;
+                failed += chunkFailed;
+                if (result.created?.length) allCreated.push(...result.created);
+                if (result.errors?.length) {
+                  allErrors.push(
+                    ...result.errors.map((err) => ({
+                      ...err,
+                      row: typeof err.row === 'number' ? err.row + i : err.row
+                    }))
+                  );
+                }
               }
-              return result;
+
+              if (allCreated.length) {
+                setReels((prev) => [...prev, ...allCreated]);
+              }
+
+              return {
+                created: allCreated,
+                errors: allErrors,
+                imported,
+                failed
+              };
             }}
             onUpdateReel={async (reel) => {
               const updated = await updateReel(reel.id, reel);
