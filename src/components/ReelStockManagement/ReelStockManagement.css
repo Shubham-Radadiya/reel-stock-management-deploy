@@ -1,3 +1,13 @@
+.reel-table-page-size {
+  width: auto;
+  min-width: 4.5rem;
+}
+
+.reel-table-page-indicator {
+  opacity: 1;
+  pointer-events: none;
+}
+
 .stock-management-container {
   animation: slideUp 0.4s ease-out;
 }

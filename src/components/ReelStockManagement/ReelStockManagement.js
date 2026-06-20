@@ -27,6 +27,8 @@ import AddReelOptionModal from './AddReelOptionModal';
 import { getNextSrNo, parseSrNoNumber } from '../../utils/reelSrNoUtils';
 
 const FILTER_COLUMN_KEYS = ['date', 'srNo', 'reelNo', 'shade', 'bf', 'gsm', 'size', 'weight', 'status', 'outDetails'];
+const TABLE_PAGE_SIZES = [50, 100, 200];
+const DEFAULT_TABLE_PAGE_SIZE = 100;
 
 const REEL_TABLE_COLGROUP = (
   <colgroup>
@@ -131,6 +133,8 @@ const ReelStockManagement = ({
   const [filterMenu, setFilterMenu] = useState(null);
   /** Table-only slice: all | in stock | out stock (stats use column-filter scope only). */
   const [stockListFilter, setStockListFilter] = useState('all');
+  const [tablePage, setTablePage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [isExcelImporting, setIsExcelImporting] = useState(false);
   const [minStockDismissTick, setMinStockDismissTick] = useState(0);
@@ -468,6 +472,24 @@ const ReelStockManagement = ({
     }
     return scopeFilteredReels;
   }, [scopeFilteredReels, stockListFilter]);
+
+  const totalTablePages = Math.max(1, Math.ceil(tableReels.length / pageSize));
+  const safeTablePage = Math.min(tablePage, totalTablePages);
+
+  const pagedTableReels = useMemo(() => {
+    const start = (safeTablePage - 1) * pageSize;
+    return tableReels.slice(start, start + pageSize);
+  }, [tableReels, safeTablePage, pageSize]);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [scopeFilteredReels.length, stockListFilter, sortConfig, columnValueFilters, pageSize]);
+
+  useEffect(() => {
+    if (tableBodyRef.current) {
+      tableBodyRef.current.scrollTop = 0;
+    }
+  }, [safeTablePage, pageSize]);
 
   // Statistics for the three boxes (same scope as column filters, not sliced by stock tab)
   const stats = useMemo(() => {
@@ -986,7 +1008,7 @@ const ReelStockManagement = ({
                     </td>
                   </tr>
                 ) : (
-                  tableReels.map((reel) => (
+                  pagedTableReels.map((reel) => (
                   <tr key={reel.id} className={reel.isCheckedOut ? 'table-row-out' : ''}>
                     <td className="reel-col-first fw-medium">
                       {editingReelId === reel.id ? (
@@ -1167,12 +1189,60 @@ const ReelStockManagement = ({
               <span className="text-dark fw-bold">{tableReels.length}</span>
               {' '}
               reel{tableReels.length !== 1 ? 's' : ''} in view
+              {tableReels.length > pageSize ? (
+                <span className="ms-1">
+                  (showing {(safeTablePage - 1) * pageSize + 1}–
+                  {Math.min(safeTablePage * pageSize, tableReels.length)})
+                </span>
+              ) : null}
             </span>
-            {stockListFilter !== 'all' && (
-              <span className="badge bg-soft-primary text-primary rounded-pill px-2 py-1">
-                {stockListFilter === 'in' ? 'In stock only' : 'Out stock only'}
-              </span>
-            )}
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              {stockListFilter !== 'all' && (
+                <span className="badge bg-soft-primary text-primary rounded-pill px-2 py-1">
+                  {stockListFilter === 'in' ? 'In stock only' : 'Out stock only'}
+                </span>
+              )}
+              {tableReels.length > TABLE_PAGE_SIZES[0] ? (
+                <>
+                  <label className="d-flex align-items-center gap-1 text-muted small mb-0">
+                    Rows
+                    <select
+                      className="form-select form-select-sm reel-table-page-size"
+                      value={pageSize}
+                      onChange={(e) => setPageSize(Number(e.target.value))}
+                      aria-label="Rows per page"
+                    >
+                      {TABLE_PAGE_SIZES.map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="btn-group btn-group-sm reel-table-pagination" role="group" aria-label="Table pages">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      disabled={safeTablePage <= 1}
+                      onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+                    >
+                      Prev
+                    </button>
+                    <span className="btn btn-outline-secondary disabled reel-table-page-indicator">
+                      {safeTablePage} / {totalTablePages}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      disabled={safeTablePage >= totalTablePages}
+                      onClick={() => setTablePage((p) => Math.min(totalTablePages, p + 1))}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

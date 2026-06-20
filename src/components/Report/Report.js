@@ -131,22 +131,28 @@ const Report = ({ reels, stockMinimums = [], setStockMinimums, userRole, userAcc
     return opts[0]?.value || String(new Date().getFullYear());
   });
 
-  const availableReels = reels.filter((r) => !r.isCheckedOut);
+  const availableReels = useMemo(
+    () => reels.filter((r) => !r.isCheckedOut),
+    [reels]
+  );
 
   const matrix = useMemo(() => {
-    const sizes = [...new Set(availableReels.map((r) => r.size))].sort(
-      (a, b) => parseFloat(a) - parseFloat(b)
-    );
-    const combinations = [];
+    if (reportSubTab !== 'matrix') {
+      return { sizes: [], combinations: [] };
+    }
+    const sizeSet = new Set();
+    const comboMap = new Map();
     availableReels.forEach((r) => {
+      sizeSet.add(r.size);
       const key = `${r.shade}_${r.bf}_${r.gsm}`;
-      if (!combinations.find((c) => c.key === key)) {
-        combinations.push({ shade: r.shade, bf: r.bf, gsm: r.gsm, key });
+      if (!comboMap.has(key)) {
+        comboMap.set(key, { shade: r.shade, bf: r.bf, gsm: r.gsm, key });
       }
     });
-    combinations.sort(compareMatrixCombinations);
+    const sizes = [...sizeSet].sort((a, b) => parseFloat(a) - parseFloat(b));
+    const combinations = [...comboMap.values()].sort(compareMatrixCombinations);
     return { sizes, combinations };
-  }, [availableReels]);
+  }, [availableReels, reportSubTab]);
 
   const comboKeySignature = useMemo(
     () => matrix.combinations.map((c) => c.key).join('\x1e'),
@@ -215,10 +221,19 @@ const Report = ({ reels, stockMinimums = [], setStockMinimums, userRole, userAcc
     setMatrixVisibleKeys(new Set(matrix.combinations.map((c) => c.key)));
   };
 
+  const matrixCountMap = useMemo(() => {
+    if (reportSubTab !== 'matrix') return new Map();
+    const map = new Map();
+    availableReels.forEach((r) => {
+      const comboKey = `${r.shade}_${r.bf}_${r.gsm}`;
+      const cellKey = `${r.size}\x1e${comboKey}`;
+      map.set(cellKey, (map.get(cellKey) || 0) + 1);
+    });
+    return map;
+  }, [availableReels, reportSubTab]);
+
   const getCount = (size, comboKey) =>
-    availableReels.filter(
-      (r) => r.size === size && `${r.shade}_${r.bf}_${r.gsm}` === comboKey
-    ).length;
+    matrixCountMap.get(`${size}\x1e${comboKey}`) || 0;
 
   const getMatrixViewGrandTotal = () =>
     matrixDisplaySizes.reduce(

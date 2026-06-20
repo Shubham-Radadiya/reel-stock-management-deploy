@@ -162,6 +162,15 @@ reelSchema.set('toJSON', {
   }
 });
 
+reelSchema.index({ date: -1, createdAt: -1 });
+reelSchema.index({ isCheckedOut: 1 });
+reelSchema.index({ size: 1, shade: 1, bf: 1, gsm: 1 });
+
+const leanReelToJson = (doc) => {
+  const { _id, __v, ...rest } = doc;
+  return { ...rest, id: _id.toString() };
+};
+
 userSchema.methods.toSafeJSON = function toSafeJSON() {
   const ret = this.toObject();
   ret.id = ret._id.toString();
@@ -617,8 +626,8 @@ app.delete('/api/stock-minimums/:id', authenticate, authorizeAdmin, async (req, 
 });
 
 app.get('/api/reels', authenticate, async (req, res) => {
-  const reels = await Reel.find().sort({ date: -1, createdAt: -1 });
-  res.json(reels.map((r) => r.toJSON()));
+  const reels = await Reel.find().sort({ date: -1, createdAt: -1 }).lean();
+  res.json(reels.map(leanReelToJson));
 });
 
 app.post('/api/reels/bulk', authenticate, async (req, res) => {
