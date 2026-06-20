@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import Login from './components/Login/Login';
 import Layout from './components/Layout/Layout';
-import ReelStockManagement from './components/ReelStockManagement/ReelStockManagement';
-import Report from './components/Report/Report';
 import ProfileModal from './components/Header/ProfileModal/ProfileModal';
-import UsersManagement from './components/UsersManagement/UsersManagement';
 import ToastContainerComponent from './components/ToastContainer';
 import {
   clearAuthToken,
@@ -27,6 +24,16 @@ import { showError, showSuccess } from './utils/toastUtils';
 import { canUseReportsNav, resolveUserAccess } from './utils/userAccessUtils';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+
+const ReelStockManagement = lazy(() => import('./components/ReelStockManagement/ReelStockManagement'));
+const Report = lazy(() => import('./components/Report/Report'));
+const UsersManagement = lazy(() => import('./components/UsersManagement/UsersManagement'));
+
+const TabLoading = () => (
+  <div className="d-flex justify-content-center align-items-center p-5 text-muted">
+    Loading…
+  </div>
+);
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -202,8 +209,9 @@ function App() {
         userRole={userRole}
         canAccessReports={canAccessReports}
       >
-        {activeTab === 'reelstockmanagement' ? (
-          <ReelStockManagement
+        <Suspense fallback={<TabLoading />}>
+          {activeTab === 'reelstockmanagement' ? (
+            <ReelStockManagement
             reels={reels}
             stockMinimums={stockMinimums}
             userRole={userRole}
@@ -273,6 +281,7 @@ function App() {
         ) : (
           <UsersManagement users={users} setUsers={setUsers} />
         )}
+        </Suspense>
       </Layout>
 
       <ProfileModal

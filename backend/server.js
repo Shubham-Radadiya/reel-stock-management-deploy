@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -46,6 +47,7 @@ const jwtSecretForAuth = () => {
   return s || 'dev-secret-change-me';
 };
 
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
