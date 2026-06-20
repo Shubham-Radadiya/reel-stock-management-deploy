@@ -33,6 +33,8 @@
   "scripts": {
     "seed:reels": "node backend/scripts/seedTestReels.js",
     "server": "node backend/server.js",
+    "start:hostinger": "node backend/start.js",
+    "postinstall": "node backend/postinstall.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "live": "npm run build && cross-env NODE_ENV=production node backend/server.js",
